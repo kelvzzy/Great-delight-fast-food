@@ -1,0 +1,341 @@
+// Prisma Schema for GREAT DELIGHT Digital Ordering System
+// Multi-tenant restaurant ordering platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+enum Role {
+  SUPER_ADMIN
+  RESTAURANT_ADMIN
+  MANAGER
+  STAFF
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  firstName     String    @map("first_name")
+  lastName      String    @map("last_name")
+  role          Role      @default(STAFF)
+  active        Boolean   @default(true)
+  restaurantId  String?   @map("restaurant_id")
+  restaurant    Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  branchId      String?   @map("branch_id")
+  branch        Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  lastLoginAt   DateTime? @map("last_login_at")
+
+  @@index([restaurantId])
+  @@index([branchId])
+  @@index([email])
+  @@map("users")
+}
+
+// ============================================
+// RESTAURANT & BRANCH
+// ============================================
+
+model Restaurant {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  logo        String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  branches    Branch[]
+  users       User[]
+
+  @@index([slug])
+  @@map("restaurants")
+}
+
+model Branch {
+  id            String    @id @default(uuid())
+  restaurantId  String    @map("restaurant_id")
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String
+  address       String?
+  phone         String?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  tables        Table[]
+  menuCategories MenuCategory[]
+  orders        Order[]
+  users         User[]
+
+  @@unique([restaurantId, slug])
+  @@index([restaurantId])
+  @@index([slug])
+  @@map("branches")
+}
+
+// ============================================
+// TABLES & QR CODES
+// ============================================
+
+model Table {
+  id          String    @id @default(uuid())
+  branchId    String    @map("branch_id")
+  branch      Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name        String    // e.g., "TABLE 01"
+  slug        String    // e.g., "table-01"
+  qrCode      String?   @map("qr_code") // Generated QR data URL
+  active      Boolean   @default(true)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  orders      Order[]
+
+  @@unique([branchId, slug])
+  @@index([branchId])
+  @@index([slug])
+  @@map("tables")
+}
+
+// ============================================
+// MENU STRUCTURE
+// ============================================
+
+model MenuCategory {
+  id          String    @id @default(uuid())
+  branchId    String    @map("branch_id")
+  branch      Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  image       String?
+  active      Boolean   @default(true)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  menuItems   MenuItem[]
+
+  @@unique([branchId, slug])
+  @@index([branchId])
+  @@index([slug])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String    @id @default(uuid())
+  categoryId  String    @map("category_id")
+  category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  image       String?
+  basePrice   Int?      @map("base_price") // Price in kobo (minor units) - nullable for items that only have variants
+  active      Boolean   @default(true)
+  available   Boolean   @default(true) // Can be marked as sold out
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  variants    MenuVariant[]
+  options     MenuOption[]
+  orderItems  OrderItem[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@index([slug])
+  @@index([available])
+  @@map("menu_items")
+}
+
+// Variants: Different versions of the same item (e.g., Catfish: Full, Middle, Head, Tail)
+model MenuVariant {
+  id          String    @id @default(uuid())
+  menuItemId  String    @map("menu_item_id")
+  menuItem    MenuItem  @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name        String    // e.g., "Full", "Middle Part", "Head", "Tail"
+  price       Int       // Price in kobo (NGN minor units)
+  active      Boolean   @default(true)
+  available   Boolean   @default(true)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  orderItemVariants OrderItemVariant[]
+
+  @@index([menuItemId])
+  @@map("menu_variants")
+}
+
+// Options: Add-ons or selections for items (e.g., Swallow type: Garri, Fufu, Semo, Pounded Yam)
+model MenuOption {
+  id          String    @id @default(uuid())
+  menuItemId  String    @map("menu_item_id")
+  menuItem    MenuItem  @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name        String    // e.g., "Swallow Type", "Protein Type"
+  required    Boolean   @default(false)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  values      MenuOptionValue[]
+
+  @@index([menuItemId])
+  @@map("menu_options")
+}
+
+model MenuOptionValue {
+  id          String    @id @default(uuid())
+  optionId    String    @map("option_id")
+  option      MenuOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  name        String    // e.g., "Garri", "Fufu", "Semo", "Pounded Yam"
+  priceModifier Int     @default(0) @map("price_modifier") // Additional price in kobo
+  active      Boolean   @default(true)
+  available   Boolean   @default(true)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  orderItemOptions OrderItemOption[]
+
+  @@index([optionId])
+  @@map("menu_option_values")
+}
+
+// ============================================
+// ORDERS
+// ============================================
+
+enum OrderStatus {
+  NEW
+  ACCEPTED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  orderNumber     String      @unique @map("order_number") // e.g., "GD-00001"
+  branchId        String      @map("branch_id")
+  branch          Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  tableId         String      @map("table_id")
+  table           Table       @relation(fields: [tableId], references: [id], onDelete: Restrict)
+  status          OrderStatus @default(NEW)
+  customerName    String?     @map("customer_name")
+  customerPhone   String?     @map("customer_phone")
+  specialNote     String?     @map("special_note")
+  subtotal        Int         // Total in kobo before any adjustments
+  total           Int         // Final total in kobo
+  itemCount       Int         @default(0) @map("item_count")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  acceptedAt      DateTime?   @map("accepted_at")
+  preparingAt     DateTime?   @map("preparing_at")
+  readyAt         DateTime?   @map("ready_at")
+  completedAt     DateTime?   @map("completed_at")
+  cancelledAt     DateTime?   @map("cancelled_at")
+  
+  items           OrderItem[]
+
+  @@index([branchId])
+  @@index([tableId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String    @id @default(uuid())
+  orderId     String    @map("order_id")
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId  String    @map("menu_item_id")
+  menuItem    MenuItem  @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+  
+  // Snapshot of item details at time of order (for historical accuracy)
+  itemName    String    @map("item_name")
+  itemPrice   Int?      @map("item_price") // Base price snapshot in kobo
+  
+  quantity    Int       @default(1)
+  subtotal    Int       // Line item subtotal in kobo (quantity × final price after variants/options)
+  
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  variant     OrderItemVariant?
+  options     OrderItemOption[]
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_items")
+}
+
+// Captures the selected variant for an order item
+model OrderItemVariant {
+  id            String    @id @default(uuid())
+  orderItemId   String    @unique @map("order_item_id")
+  orderItem     OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  variantId     String    @map("variant_id")
+  variant       MenuVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  
+  // Snapshot
+  variantName   String    @map("variant_name")
+  variantPrice  Int       @map("variant_price") // Price snapshot in kobo
+  
+  @@index([orderItemId])
+  @@index([variantId])
+  @@map("order_item_variants")
+}
+
+// Captures selected options for an order item
+model OrderItemOption {
+  id              String    @id @default(uuid())
+  orderItemId     String    @map("order_item_id")
+  orderItem       OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  optionValueId   String    @map("option_value_id")
+  optionValue     MenuOptionValue @relation(fields: [optionValueId], references: [id], onDelete: Restrict)
+  
+  // Snapshot
+  optionName      String    @map("option_name")
+  valueName       String    @map("value_name")
+  priceModifier   Int       @default(0) @map("price_modifier") // Price modifier snapshot in kobo
+  
+  @@index([orderItemId])
+  @@index([optionValueId])
+  @@map("order_item_options")
+}
+
+// ============================================
+// AUDIT LOG (Optional for V1, prepared for future)
+// ============================================
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  userId      String?   @map("user_id")
+  action      String    // e.g., "ORDER_CREATED", "PRICE_CHANGED", "MENU_ITEM_UPDATED"
+  entityType  String    @map("entity_type") // e.g., "Order", "MenuItem"
+  entityId    String    @map("entity_id")
+  details     String?   // JSON string with additional context
+  ipAddress   String?   @map("ip_address")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
