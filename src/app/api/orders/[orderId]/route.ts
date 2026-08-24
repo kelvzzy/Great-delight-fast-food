@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { orderService } from '@/services/order.service';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/orders/:orderId
  * Public endpoint - Get order details

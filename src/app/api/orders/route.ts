@@ -3,6 +3,9 @@ import { orderService } from '@/services/order.service';
 import { createOrderSchema } from '@/lib/validations/order';
 import { z } from 'zod';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // In-memory duplicate order protection (resets on server restart)
 // For production, use Redis or database-based solution
 const recentOrders = new Map<string, number>();

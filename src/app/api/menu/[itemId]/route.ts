@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { menuService } from '@/services/menu.service';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/menu/:itemId
  * Public endpoint - Get menu item details

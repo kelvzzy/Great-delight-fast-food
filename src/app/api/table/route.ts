@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { qrService } from '@/services/qr.service';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/table?restaurant=great-delight&branch=main&table=table-01
  * Public endpoint - Get table details by route params

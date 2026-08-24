@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth';
 import { orderService } from '@/services/order.service';
 import { OrderStatus } from '@prisma/client';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/admin/orders?status=NEW&limit=50
  * Authenticated endpoint - Get orders for branch
