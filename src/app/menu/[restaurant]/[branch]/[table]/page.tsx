@@ -1,6 +1,10 @@
 import { MenuPageClient } from './MenuPageClient';
 import { notFound } from 'next/navigation';
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getMenu(restaurant: string, branch: string) {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/menu?restaurant=${restaurant}&branch=${branch}`,

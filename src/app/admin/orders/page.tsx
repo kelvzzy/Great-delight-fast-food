@@ -4,6 +4,10 @@ import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { OrdersClient } from './OrdersClient';
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getOrders(branchId: string) {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/orders?branchId=${branchId}`,

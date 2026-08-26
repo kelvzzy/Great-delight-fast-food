@@ -5,6 +5,10 @@ import { AdminNav } from '@/components/admin/AdminNav';
 import { TablesManagementClient } from './TablesManagementClient';
 import { prisma } from '@/lib/prisma';
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getTables(branchId: string) {
   try {
     const tables = await prisma.table.findMany({

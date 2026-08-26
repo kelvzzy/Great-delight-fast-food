@@ -5,6 +5,10 @@ import { AdminNav } from '@/components/admin/AdminNav';
 import { MenuManagementClient } from './MenuManagementClient';
 import { menuService } from '@/services/menu.service';
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getMenu(branchId: string) {
   try {
     // Get branch with full menu structure
