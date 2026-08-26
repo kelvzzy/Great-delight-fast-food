@@ -25,7 +25,7 @@ interface Order {
   orderNumber: string;
   status: string;
   total: number;
-  customerName: string;
+  customerName: string | null;
   createdAt: string;
   table: {
     name: string;
@@ -187,7 +187,7 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>{order.customerName}</span>
+                    <span>{order.customerName || 'Walk-in Customer'}</span>
                     <span>•</span>
                     <span>{order.table.name}</span>
                     <span>•</span>

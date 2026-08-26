@@ -9,7 +9,7 @@ interface Order {
   orderNumber: string;
   status: string;
   total: number;
-  customerName: string;
+  customerName: string | null;
   createdAt: string;
   itemCount: number;
   table: {
@@ -187,7 +187,7 @@ export function OrdersClient({ initialOrders, branchId }: OrdersClientProps) {
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                      <span className="font-medium">{order.customerName}</span>
+                      <span className="font-medium">{order.customerName || 'Walk-in Customer'}</span>
                       <span>•</span>
                       <span>{order.table.name}</span>
                       <span>•</span>
