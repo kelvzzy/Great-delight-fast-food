@@ -63,7 +63,7 @@ export default async function DashboardPage() {
       <main className="flex-1 md:ml-0">
         <DashboardClient 
           stats={stats} 
-          recentOrders={recentOrders} 
+          recentOrders={recentOrders as any}
           branchId={branchId}
         />
       </main>

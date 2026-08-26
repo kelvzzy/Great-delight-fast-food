@@ -49,7 +49,7 @@ export default async function OrdersPage() {
     <div className="flex min-h-screen bg-gray-50">
       <AdminNav userName={user.name} userEmail={user.email} />
       <main className="flex-1 md:ml-0">
-        <OrdersClient initialOrders={orders} branchId={branchId} />
+        <OrdersClient initialOrders={orders as any} branchId={branchId} />
       </main>
     </div>
   );
