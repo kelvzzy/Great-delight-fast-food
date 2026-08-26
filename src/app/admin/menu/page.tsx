@@ -3,7 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { MenuManagementClient } from './MenuManagementClient';
-import { menuService } from '@/services/menu.service';
+import { prisma } from '@/lib/prisma';
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic';
@@ -11,22 +11,30 @@ export const revalidate = 0;
 
 async function getMenu(branchId: string) {
   try {
-    // Get branch with full menu structure
-    const branch = await menuService.getMenuByBranch('', ''); // Will be modified to use branchId directly
-    
-    // For now, get via direct API call
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/menu?branchId=${branchId}`,
-      { 
-        cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }
-    );
+    const categories = await prisma.menuCategory.findMany({
+      where: { branchId },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        menuItems: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            variants: {
+              orderBy: { sortOrder: 'asc' },
+            },
+            options: {
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                values: {
+                  orderBy: { sortOrder: 'asc' },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
-    if (!res.ok) return { categories: [] };
-    return res.json();
+    return { categories };
   } catch (error) {
     console.error('Error fetching menu:', error);
     return { categories: [] };

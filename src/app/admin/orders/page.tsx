@@ -3,25 +3,20 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { OrdersClient } from './OrdersClient';
+import { orderService } from '@/services/order.service';
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getOrders(branchId: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/orders?branchId=${branchId}`,
-    { 
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    }
-  );
-
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.orders || [];
+  try {
+    const orders = await orderService.getOrders(branchId);
+    return orders || [];
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    return [];
+  }
 }
 
 export default async function OrdersPage() {

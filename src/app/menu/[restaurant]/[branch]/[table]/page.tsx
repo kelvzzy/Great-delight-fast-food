@@ -1,28 +1,28 @@
 import { MenuPageClient } from './MenuPageClient';
 import { notFound } from 'next/navigation';
+import { menuService } from '@/services/menu.service';
+import { qrService } from '@/services/qr.service';
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getMenu(restaurant: string, branch: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/menu?restaurant=${restaurant}&branch=${branch}`,
-    { cache: 'no-store' }
-  );
-
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    return await menuService.getMenuByBranch(restaurant, branch);
+  } catch (error) {
+    console.error('Error fetching menu:', error);
+    return null;
+  }
 }
 
 async function getTable(restaurant: string, branch: string, table: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/table?restaurant=${restaurant}&branch=${branch}&table=${table}`,
-    { cache: 'no-store' }
-  );
-
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    return await qrService.getTableByRoute(restaurant, branch, table);
+  } catch (error) {
+    console.error('Error fetching table:', error);
+    return null;
+  }
 }
 
 export default async function MenuPage({

@@ -3,40 +3,29 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { DashboardClient } from './DashboardClient';
+import { orderService } from '@/services/order.service';
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getStats(branchId: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/stats?branchId=${branchId}`,
-    { 
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    }
-  );
-
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    return await orderService.getTodayStats(branchId);
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    return null;
+  }
 }
 
 async function getRecentOrders(branchId: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/orders?branchId=${branchId}&limit=5`,
-    { 
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    }
-  );
-
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.orders || [];
+  try {
+    const orders = await orderService.getOrders(branchId, undefined, 5);
+    return orders || [];
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    return [];
+  }
 }
 
 export default async function DashboardPage() {
