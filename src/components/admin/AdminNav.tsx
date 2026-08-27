@@ -13,6 +13,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { useState } from 'react';
+import { Logo } from '@/components/Logo';
 
 interface AdminNavProps {
   userName?: string;
@@ -39,8 +40,8 @@ export function AdminNav({ userName, userEmail }: AdminNavProps) {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:flex-col md:w-64 bg-gray-900 text-white min-h-screen">
         <div className="p-6 border-b border-gray-800">
-          <h1 className="text-2xl font-bold">GREAT DELIGHT</h1>
-          <p className="text-sm text-gray-400 mt-1">Admin Portal</p>
+          <Logo size="md" variant="dark" showText={true} />
+          <p className="text-sm text-gray-400 mt-2">Admin Portal</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -82,7 +83,7 @@ export function AdminNav({ userName, userEmail }: AdminNavProps) {
 
       {/* Mobile Header */}
       <div className="md:hidden bg-gray-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-50">
-        <h1 className="text-xl font-bold">GREAT DELIGHT</h1>
+        <Logo size="sm" variant="dark" showText={false} />
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 hover:bg-gray-800 rounded-lg"

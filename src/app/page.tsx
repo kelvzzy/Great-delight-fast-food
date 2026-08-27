@@ -1,17 +1,13 @@
 import Link from 'next/link';
+import { Logo } from '@/components/Logo';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 flex flex-col items-center justify-center p-4">
       <div className="max-w-2xl w-full text-center space-y-8">
         {/* Logo/Branding */}
-        <div className="space-y-2">
-          <h1 className="text-6xl font-bold text-primary-900">
-            GREAT DELIGHT
-          </h1>
-          <p className="text-xl text-gray-600">
-            Premium Nigerian Restaurant
-          </p>
+        <div className="flex justify-center">
+          <Logo size="xl" showText={true} />
         </div>
 
         {/* Welcome Message */}
