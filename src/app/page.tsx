@@ -22,7 +22,7 @@ export default function HomePage() {
           {/* Quick Actions */}
           <div className="grid gap-4 pt-4">
             <Link
-              href="/admin"
+              href="/admin/login"
               className="block bg-primary-600 hover:bg-primary-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors"
             >
               Staff / Admin Login
