@@ -46,7 +46,6 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
   const [newOrderCount, setNewOrderCount] = useState(0);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const previousOrderCountRef = useRef(initialOrders.length);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -97,26 +96,6 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
     }
   };
 
-  // Show browser notification
-  const showNotification = (orderNumber: string, customerName: string | null, total: number) => {
-    if (notificationPermission === 'granted' && 'Notification' in window) {
-      const notification = new Notification('🔔 New Order Received!', {
-        body: `Order ${orderNumber} from ${customerName || 'Walk-in Customer'}\nTotal: ${formatNaira(total)}`,
-        icon: '/logo.png',
-        tag: orderNumber,
-        requireInteraction: false,
-      });
-
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-      };
-
-      // Auto-close after 10 seconds
-      setTimeout(() => notification.close(), 10000);
-    }
-  };
-
   // Refresh data every 15 seconds
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -135,11 +114,7 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
           const ordersData = await ordersRes.json();
           const newOrders = ordersData.orders || [];
           
-          // Check if there are new orders
-          const currentOrderCount = newOrders.length;
-          const previousOrderCount = previousOrderCountRef.current;
-
-          // Detect new orders by comparing counts and checking for NEW status
+          // Detect new orders by comparing with previous orders
           const hasNewOrders = newOrders.some((order: Order) => 
             order.status === 'NEW' && 
             !recentOrders.some((existingOrder) => existingOrder.id === order.id)
@@ -152,14 +127,30 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
             );
 
             if (newOrder) {
+              console.log('🔔 New order detected!', newOrder.orderNumber);
+              
               // Increment new order count
               setNewOrderCount((prev) => prev + 1);
 
               // Play sound
               playNotificationSound();
 
-              // Show notification
-              showNotification(newOrder.orderNumber, newOrder.customerName, newOrder.total);
+              // Show browser notification
+              if (notificationPermission === 'granted' && 'Notification' in window) {
+                const notification = new Notification('🔔 New Order Received!', {
+                  body: `Order ${newOrder.orderNumber} from ${newOrder.customerName || 'Walk-in Customer'}\nTotal: ${formatNaira(newOrder.total)}`,
+                  icon: '/logo.png',
+                  tag: newOrder.orderNumber,
+                  requireInteraction: false,
+                });
+
+                notification.onclick = () => {
+                  window.focus();
+                  notification.close();
+                };
+
+                setTimeout(() => notification.close(), 10000);
+              }
 
               // Flash animation
               document.body.classList.add('flash-notification');
@@ -169,7 +160,6 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
             }
           }
 
-          previousOrderCountRef.current = currentOrderCount;
           setRecentOrders(newOrders);
         }
       } catch (error) {
@@ -178,6 +168,7 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
     }, 15000); // Check every 15 seconds
 
     return () => clearInterval(interval);
+  }, [branchId, recentOrders, notificationPermission]);
   }, [branchId, recentOrders]);
 
   // Clear new order badge
