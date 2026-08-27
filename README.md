@@ -1,518 +1,204 @@
-# GREAT DELIGHT Digital Menu & Ordering System
+# 🍽️ GREAT DELIGHT - Digital Ordering System
 
-**Production-ready restaurant digital menu and table-ordering platform**  
-Built by **Do'r Stack Software Solutions (DSSS)**
+A modern, full-stack restaurant ordering system built with Next.js 14, TypeScript, Prisma, and PostgreSQL.
 
----
+## 🚀 Live Demo
 
-## Overview
+- **Production**: https://great-delight-fastfood.vercel.app/
+- **Customer Menu**: https://great-delight-fastfood.vercel.app/menu/great-delight/main/table-01
+- **Admin Portal**: https://great-delight-fastfood.vercel.app/admin
 
-GREAT DELIGHT Digital Ordering System is a mobile-first restaurant platform that enables customers to browse menus via QR codes and place orders directly from their tables. The system provides complete restaurant operations management including menu control, order tracking, and real-time order updates.
+**Admin Credentials:**
+- Email: `admin@greatdelight.com`
+- Password: `admin123`
 
-### Key Features
+## ✨ Features
 
-- **QR Code Table Ordering** - Customers scan codes to access digital menus
-- **Mobile-First Menu** - Responsive design optimized for phones
-- **Order Management Dashboard** - Real-time order tracking and status updates
-- **Menu Management** - Full CRUD operations for categories, items, variants, and options
-- **Price Management** - Update prices without affecting historical orders
-- **Availability Control** - Mark items as sold out dynamically
-- **Multi-Tenant Architecture** - Supports multiple restaurants and branches
-- **Order History** - Complete price snapshots for historical accuracy
-- **Real-Time Updates** - Live order notifications for staff
-- **Analytics Dashboard** - Today's orders, revenue, and performance metrics
+### Customer Experience
+- 📱 QR code table ordering (no app required)
+- 🎨 Beautiful accordion-style menu
+- 🛒 Real-time cart management
+- 📋 Order tracking
+- 📱 Mobile-responsive design
 
----
+### Admin Dashboard
+- 📊 Real-time order management
+- 🔔 Browser notifications with sound alerts
+- 📈 Daily statistics and analytics
+- 🍽️ Menu management
+- 📍 Table management
+- 👥 Multi-role access control
 
-## Technology Stack
+### Menu Highlights
+- **58 menu items** across **10 categories**
+- Soups, Rice & Combos, Quick Meals, Pepper Soup, Proteins
+- Drinks (Beers & Wines), Grills, Cocktails, Mocktails, Teas
+- All prices in Nigerian Naira (₦)
 
-### Frontend
-- **Next.js 14** (App Router)
-- **React 18**
-- **TypeScript**
-- **Tailwind CSS**
-- **Zustand** (State Management)
+## 🛠️ Tech Stack
 
-### Backend
-- **Node.js**
-- **Next.js API Routes**
-- **TypeScript**
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Database**: PostgreSQL (Neon)
+- **ORM**: Prisma
+- **Authentication**: NextAuth.js
+- **Styling**: Tailwind CSS
+- **Deployment**: Vercel
+- **Icons**: Lucide React
 
-### Database
-- **PostgreSQL**
-- **Prisma ORM**
-
-### Authentication
-- **NextAuth.js**
-- **bcryptjs**
-
-### Additional Libraries
-- **Zod** - Runtime validation
-- **qrcode** - QR code generation
-- **date-fns** - Date formatting
-
----
-
-## Architecture
-
-### Multi-Tenant Domain Model
-
-```
-Restaurant
-└── Branch
-    ├── Tables (with QR codes)
-    ├── Menu Categories
-    │   └── Menu Items
-    │       ├── Variants (e.g., Full, Middle, Head for Catfish)
-    │       └── Options (e.g., Swallow selection)
-    ├── Orders
-    └── Staff
-```
-
-### Price Snapshot Architecture
-
-Orders store complete price snapshots to preserve historical accuracy. When prices change, past orders retain their original pricing.
-
-### Modular Monolith
-
-The system uses a clean layered architecture:
-- **API Routes** - HTTP endpoints
-- **Services** - Business logic
-- **Repositories** - Data access (Prisma)
-- **Validation** - Zod schemas
-
----
-
-## Getting Started
+## 📦 Local Development
 
 ### Prerequisites
+- Node.js 18+ and npm
+- PostgreSQL database
 
-- **Node.js** 18.17+ and npm 9+
-- **PostgreSQL** 15+
-- **Docker** (optional, for containerized development)
-
-### Installation
+### Setup
 
 1. **Clone the repository**
-
-```bash
-cd great-delight-fastfood
-```
+   ```bash
+   git clone https://github.com/kelvzzy/Great-delight-fast-food.git
+   cd Great-delight-fast-food
+   ```
 
 2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```bash
-npm install
-```
+3. **Setup environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit `.env` and add your database URL:
+   ```env
+   DATABASE_URL="your-postgresql-connection-string"
+   NEXTAUTH_SECRET="your-secret-key"
+   NEXTAUTH_URL="http://localhost:3000"
+   ```
 
-3. **Set up environment variables**
+4. **Setup database**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   npx tsx prisma/seed.ts
+   ```
 
-```bash
-cp .env.example .env
-```
+5. **Run development server**
+   ```bash
+   npm run dev
+   ```
 
-Edit `.env` and configure:
-- `DATABASE_URL` - PostgreSQL connection string
-- `NEXTAUTH_SECRET` - Generate with: `openssl rand -base64 32`
-- `NEXTAUTH_URL` - Application URL (http://localhost:3000 for development)
+   Open [http://localhost:3000](http://localhost:3000)
 
-4. **Start PostgreSQL**
-
-Option A: Using Docker Compose
-```bash
-npm run docker:up
-```
-
-Option B: Use your local PostgreSQL instance and update `DATABASE_URL`
-
-5. **Run database migrations**
-
-```bash
-npm run prisma:migrate
-```
-
-6. **Seed the database**
-
-```bash
-npm run prisma:seed
-```
-
-This creates:
-- GREAT DELIGHT restaurant
-- Main branch
-- 20 tables (TABLE 01 - TABLE 20)
-- Complete menu with all categories and items
-- Admin user account
-
-7. **Start development server**
-
-```bash
-npm run dev
-```
-
-Visit http://localhost:3000
-
----
-
-## Default Credentials
-
-```
-Email: admin@greatdelight.com
-Password: admin123
-```
-
-**⚠️ Change these credentials in production!**
-
----
-
-## Database Management
-
-### Prisma Commands
-
-```bash
-# Generate Prisma Client
-npm run prisma:generate
-
-# Create migration
-npm run prisma:migrate
-
-# Open Prisma Studio (database GUI)
-npm run prisma:studio
-
-# Reset database (⚠️ destructive)
-npm run prisma:reset
-
-# Seed database
-npm run prisma:seed
-```
-
----
-
-## Project Structure
+## 📚 Project Structure
 
 ```
 ├── prisma/
-│   ├── schema.prisma       # Database schema
-│   └── seed.ts             # Database seed script
+│   ├── schema.prisma          # Database schema
+│   ├── seed.ts                # Database seed script
+│   └── add-new-items.ts       # Script to add menu items
 ├── src/
-│   ├── app/                # Next.js App Router
-│   │   ├── api/            # API routes
-│   │   ├── menu/           # Customer menu pages
-│   │   ├── admin/          # Admin dashboard
-│   │   └── order/          # Order confirmation
-│   ├── components/         # React components
-│   │   ├── customer/       # Customer-facing components
-│   │   ├── admin/          # Admin components
-│   │   └── shared/         # Shared components
-│   ├── lib/                # Core utilities
-│   │   ├── prisma.ts       # Prisma client
-│   │   ├── auth.ts         # Authentication config
-│   │   ├── utils.ts        # Helper functions
-│   │   ├── logger.ts       # Application logger
-│   │   └── validations/    # Zod schemas
-│   ├── services/           # Business logic
-│   │   ├── order.service.ts
-│   │   ├── menu.service.ts
-│   │   └── qr.service.ts
-│   └── types/              # TypeScript types
-├── docker-compose.yml      # Docker configuration
-├── Dockerfile              # Production container
-└── README.md
+│   ├── app/                   # Next.js app router pages
+│   │   ├── admin/             # Admin dashboard pages
+│   │   ├── menu/              # Customer menu pages
+│   │   └── api/               # API routes
+│   ├── components/            # React components
+│   │   ├── admin/             # Admin components
+│   │   └── Logo.tsx           # Centralized logo component
+│   ├── lib/                   # Utilities and configurations
+│   └── services/              # Business logic services
+├── public/                    # Static assets
+└── README.md                  # This file
 ```
 
----
-
-## API Endpoints
-
-### Public Endpoints
-
-#### Menu
-- `GET /api/menu?restaurant={slug}&branch={slug}` - Get complete menu
-- `GET /api/menu/:itemId` - Get menu item details
-
-#### Orders
-- `POST /api/orders` - Create new order
-- `GET /api/orders/:orderId` - Get order details
-
-#### Tables
-- `GET /api/table?restaurant={slug}&branch={slug}&table={slug}` - Get table details
-
-### Admin Endpoints (Authenticated)
-
-#### Orders
-- `GET /api/admin/orders?status={status}&limit={limit}` - Get orders list
-- `PATCH /api/admin/orders/:orderId/status` - Update order status
-
-#### Menu Management
-- `PATCH /api/admin/menu/items/:itemId/availability` - Toggle availability
-- `PATCH /api/admin/menu/items/:itemId/price` - Update price
-
-#### QR Codes
-- `POST /api/admin/tables/:tableId/qr` - Generate table QR code
-
-#### Analytics
-- `GET /api/admin/stats` - Get today's statistics
-
----
-
-## Customer Journey
-
-1. **Scan QR Code** - Customer scans table QR code with phone
-2. **Browse Menu** - Mobile-optimized menu loads instantly
-3. **Select Items** - Choose food with variants and options
-4. **Add to Cart** - Cart preserves selections
-5. **Place Order** - Submit order with optional customer details
-6. **Confirmation** - Receive order number and confirmation
-
-QR Code URL Pattern:
-```
-https://your-domain.com/menu/great-delight/main/table-01
-```
-
----
-
-## Restaurant Operations
-
-### Order Dashboard
-
-Staff see incoming orders in real-time with:
-- Order number
-- Table number
-- Items with selections
-- Total amount
-- Status buttons: **Accept** → **Preparing** → **Ready** → **Completed**
-
-### Menu Management
-
-- Create/edit/delete categories
-- Create/edit/delete menu items
-- Add variants (e.g., Catfish: Full, Middle, Head, Tail)
-- Add options (e.g., Swallow: Garri, Fufu, Semo, Pounded Yam)
-- Change prices (historical orders unaffected)
-- Toggle availability (mark items sold out)
-
----
-
-## Money Handling
-
-All monetary values are stored in **kobo** (Nigerian Naira minor units) to avoid floating-point errors.
-
-```typescript
-// Convert Naira to kobo
-const kobo = naira * 100;  // ₦7,000 → 700000
-
-// Convert kobo to Naira
-const naira = kobo / 100;  // 700000 → ₦7,000
-
-// Format for display
-formatNaira(700000);  // "₦7,000"
-```
-
-**Never use floating-point arithmetic for money calculations.**
-
----
-
-## Testing
+## 🔧 Key Scripts
 
 ```bash
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests in CI mode
-npm run test:ci
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+npx prisma studio    # Open Prisma Studio (database GUI)
+npx tsx prisma/seed.ts    # Re-seed database
 ```
 
-### Test Coverage
+## 🎨 Adding Custom Logo
 
-- Unit tests for price calculations
-- Unit tests for cart logic
-- Integration tests for API endpoints
-- E2E tests for critical flows
+1. Add your logo image to `/public/logo.png` (512x512px recommended)
+2. Edit `src/components/Logo.tsx`:
+   ```typescript
+   const HAS_CUSTOM_LOGO = true;  // Change from false to true
+   ```
+3. Deploy!
+
+See `LOGO_INTEGRATION_GUIDE.md` for detailed instructions.
+
+## 📖 Documentation
+
+- **ALL_PHASES_COMPLETE.md** - Complete feature list and implementation summary
+- **LOGO_INTEGRATION_GUIDE.md** - Step-by-step logo replacement guide
+- **TESTING_GUIDE.md** - Comprehensive testing checklist
+
+## 🚀 Deployment
+
+The application is deployed on Vercel with automatic deployments from the `main` branch.
+
+### Environment Variables (Vercel)
+Required environment variables in Vercel dashboard:
+- `DATABASE_URL` - PostgreSQL connection string
+- `NEXTAUTH_SECRET` - Random secret for NextAuth
+- `NEXTAUTH_URL` - Production URL
+- `NEXT_PUBLIC_APP_URL` - Public app URL
+
+## 🧪 Testing
+
+See `TESTING_GUIDE.md` for detailed testing instructions covering:
+- Customer order flow
+- Admin notifications
+- Real-time updates
+- Logo integration
+- Mobile responsiveness
+
+## 📱 QR Code Generation
+
+To generate QR codes for tables:
+1. Navigate to Admin → Tables
+2. Each table has a unique URL
+3. Generate QR codes linking to: `/menu/great-delight/main/table-XX`
+
+## 🔐 Security Features
+
+- Server-side price validation
+- Duplicate order prevention
+- Protected admin routes
+- Secure authentication with NextAuth
+- Environment variable protection
+
+## 🤝 Contributing
+
+This is a production system. For modifications:
+1. Test locally first
+2. Create a feature branch
+3. Test thoroughly
+4. Deploy to staging (if available)
+5. Deploy to production
+
+## 📄 License
+
+Private project for GREAT DELIGHT Restaurant.
+
+## 🆘 Support
+
+For issues or questions:
+1. Check the documentation files
+2. Review the testing guide
+3. Check Vercel deployment logs
+4. Verify database connectivity
 
 ---
 
-## Production Build
-
-### Build Application
-
-```bash
-npm run build
-```
-
-### Start Production Server
-
-```bash
-npm start
-```
-
-### Type Checking
-
-```bash
-npm run type-check
-```
-
-### Linting
-
-```bash
-npm run lint
-```
-
----
-
-## Docker Deployment
-
-### Development
-
-```bash
-docker compose up -d
-```
-
-### Production
-
-1. **Build image**
-
-```bash
-docker build -t great-delight-app .
-```
-
-2. **Run container**
-
-```bash
-docker run -d \
-  -p 3000:3000 \
-  -e DATABASE_URL="postgresql://..." \
-  -e NEXTAUTH_SECRET="..." \
-  -e NEXTAUTH_URL="https://your-domain.com" \
-  great-delight-app
-```
-
----
-
-## Environment Variables
-
-### Required
-
-```env
-DATABASE_URL=postgresql://user:password@host:5432/database
-NEXTAUTH_SECRET=your-secret-min-32-characters
-NEXTAUTH_URL=https://your-domain.com
-```
-
-### Optional
-
-```env
-LOG_LEVEL=info
-NODE_ENV=production
-NEXT_PUBLIC_APP_NAME=GREAT DELIGHT
-NEXT_PUBLIC_APP_URL=https://your-domain.com
-```
-
-### Future (Image Storage)
-
-```env
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_REGION=
-AWS_S3_BUCKET=
-```
-
----
-
-## Security
-
-### Implemented
-
-- ✅ Password hashing (bcryptjs)
-- ✅ Secure session management (NextAuth.js)
-- ✅ Role-based authorization
-- ✅ Input validation (Zod)
-- ✅ SQL injection protection (Prisma ORM)
-- ✅ XSS-safe rendering (React)
-- ✅ Secure HTTP headers
-- ✅ CORS policy
-- ✅ Environment secrets management
-- ✅ Audit logging with sanitization
-
-### Production Checklist
-
-- [ ] Change default admin password
-- [ ] Use strong `NEXTAUTH_SECRET`
-- [ ] Enable HTTPS
-- [ ] Configure CORS for production domain
-- [ ] Set up database backups
-- [ ] Enable rate limiting
-- [ ] Configure firewall rules
-- [ ] Set up monitoring and alerts
-
----
-
-## Logging
-
-The application uses structured logging that automatically sanitizes sensitive data.
-
-```typescript
-import { logger } from '@/lib/logger';
-
-logger.info('Order created', { orderId, total });
-logger.warn('Invalid login attempt', { email });
-logger.error('Database error', { error });
-```
-
-**Passwords, tokens, and secrets are never logged.**
-
----
-
-## Menu Data
-
-The seed script includes the complete GREAT DELIGHT menu:
-
-- **Soups** - 8 items (White Soup, Ogbono, Okra, Afang, etc.)
-- **Rice & Combos** - 7 items (Jollof, Fried Rice, White Rice variations)
-- **Quick Meals** - 6 items (Yam, Porridge, Spaghetti, Noodles)
-- **Pepper Soup** - 3 items (Assorted, Goat Meat, Catfish)
-- **Proteins** - Peppered Meat (Beef/Goat)
-
-All prices match the source specification exactly.
-
----
-
-## Future Enhancements
-
-The architecture supports these future modules:
-
-- Online ordering (delivery/pickup)
-- Kitchen Display System (KDS)
-- Point of Sale (POS) integration
-- Inventory management
-- Staff management
-- Customer management & loyalty
-- Payment processing
-- Sales analytics
-- Marketing automation
-- Multi-branch management
-
----
-
-## Support
-
-**Technology Provider:** Do'r Stack Software Solutions (DSSS)
-
-For technical issues or questions, contact the development team.
-
----
-
-## License
-
-Proprietary - All rights reserved to Do'r Stack Software Solutions
-
----
-
-## Credits
-
-**Developed by:** Do'r Stack Software Solutions (DSSS)  
-**Client:** GREAT DELIGHT  
-**Version:** 1.0.0  
-**Year:** 2026
+**Built with ❤️ for GREAT DELIGHT Restaurant**  
+**Status:** ✅ Production Ready  
+**Version:** 2.0  
+**Last Updated:** August 27, 2026
