@@ -98,7 +98,11 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
 
   // Refresh data every 15 seconds
   useEffect(() => {
+    console.log('🔄 Auto-refresh effect mounted for dashboard');
+    
     const interval = setInterval(async () => {
+      console.log('🔄 Fetching updates...', new Date().toLocaleTimeString());
+      
       try {
         const [statsRes, ordersRes] = await Promise.all([
           fetch(`/api/admin/stats?branchId=${branchId}`),
@@ -113,12 +117,15 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
         if (ordersRes.ok) {
           const ordersData = await ordersRes.json();
           const newOrders = ordersData.orders || [];
+          console.log('📋 Current orders:', newOrders.length, 'Previous orders:', recentOrders.length);
           
           // Detect new orders by comparing with previous orders
           const hasNewOrders = newOrders.some((order: Order) => 
             order.status === 'NEW' && 
             !recentOrders.some((existingOrder) => existingOrder.id === order.id)
           );
+
+          console.log('🔍 Has new orders?', hasNewOrders);
 
           if (hasNewOrders) {
             const newOrder = newOrders.find((order: Order) => 
@@ -127,15 +134,17 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
             );
 
             if (newOrder) {
-              console.log('🔔 New order detected!', newOrder.orderNumber);
+              console.log('🔔 NEW ORDER DETECTED!', newOrder.orderNumber);
               
               // Increment new order count
               setNewOrderCount((prev) => prev + 1);
 
               // Play sound
+              console.log('🔊 Playing sound...');
               playNotificationSound();
 
               // Show browser notification
+              console.log('🔔 Showing browser notification, permission:', notificationPermission);
               if (notificationPermission === 'granted' && 'Notification' in window) {
                 const notification = new Notification('🔔 New Order Received!', {
                   body: `Order ${newOrder.orderNumber} from ${newOrder.customerName || 'Walk-in Customer'}\nTotal: ${formatNaira(newOrder.total)}`,
@@ -150,9 +159,12 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
                 };
 
                 setTimeout(() => notification.close(), 10000);
+              } else {
+                console.warn('⚠️ Notifications not granted or not supported');
               }
 
               // Flash animation
+              console.log('✨ Adding flash animation');
               document.body.classList.add('flash-notification');
               setTimeout(() => {
                 document.body.classList.remove('flash-notification');
@@ -163,11 +175,14 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
           setRecentOrders(newOrders);
         }
       } catch (error) {
-        console.error('Failed to refresh dashboard data:', error);
+        console.error('❌ Failed to refresh dashboard data:', error);
       }
     }, 15000); // Check every 15 seconds
 
-    return () => clearInterval(interval);
+    return () => {
+      console.log('🛑 Auto-refresh effect unmounted');
+      clearInterval(interval);
+    };
   }, [branchId, recentOrders, notificationPermission]);
   }, [branchId, recentOrders]);
 

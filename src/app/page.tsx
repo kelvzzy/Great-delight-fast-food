@@ -13,7 +13,7 @@ export default function HomePage() {
         {/* Welcome Message */}
         <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
           <h2 className="text-3xl font-bold text-gray-900">
-            Welcome
+            Welcome to GREAT DELIGHT
           </h2>
           <p className="text-lg text-gray-600">
             Scan the QR code on your table to browse our digital menu and place your order.
