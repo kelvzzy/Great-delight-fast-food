@@ -46,12 +46,7 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
   const [newOrderCount, setNewOrderCount] = useState(0);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const recentOrdersRef = useRef(initialOrders); // Use ref to avoid dependency issues
-
-  // Update ref when orders change
-  useEffect(() => {
-    recentOrdersRef.current = recentOrders;
-  }, [recentOrders]);
+  const previousOrderCountRef = useRef(initialOrders.length);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -102,13 +97,29 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
     }
   };
 
+  // Show browser notification
+  const showNotification = (orderNumber: string, customerName: string | null, total: number) => {
+    if (notificationPermission === 'granted' && 'Notification' in window) {
+      const notification = new Notification('🔔 New Order Received!', {
+        body: `Order ${orderNumber} from ${customerName || 'Walk-in Customer'}\nTotal: ${formatNaira(total)}`,
+        icon: '/logo.png',
+        tag: orderNumber,
+        requireInteraction: false,
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+
+      // Auto-close after 10 seconds
+      setTimeout(() => notification.close(), 10000);
+    }
+  };
+
   // Refresh data every 15 seconds
   useEffect(() => {
-    console.log('🔄 Auto-refresh effect mounted for dashboard');
-    
     const interval = setInterval(async () => {
-      console.log('🔄 Fetching updates...', new Date().toLocaleTimeString());
-      
       try {
         const [statsRes, ordersRes] = await Promise.all([
           fetch(`/api/admin/stats?branchId=${branchId}`),
@@ -123,56 +134,34 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
         if (ordersRes.ok) {
           const ordersData = await ordersRes.json();
           const newOrders = ordersData.orders || [];
-          const previousOrders = recentOrdersRef.current; // Use ref
           
-          console.log('📋 Current orders:', newOrders.length, 'Previous orders:', previousOrders.length);
-          
-          // Detect new orders by comparing with previous orders
+          // Check if there are new orders
+          const currentOrderCount = newOrders.length;
+          const previousOrderCount = previousOrderCountRef.current;
+
+          // Detect new orders by comparing counts and checking for NEW status
           const hasNewOrders = newOrders.some((order: Order) => 
             order.status === 'NEW' && 
-            !previousOrders.some((existingOrder) => existingOrder.id === order.id)
+            !recentOrders.some((existingOrder) => existingOrder.id === order.id)
           );
-
-          console.log('🔍 Has new orders?', hasNewOrders);
 
           if (hasNewOrders) {
             const newOrder = newOrders.find((order: Order) => 
               order.status === 'NEW' && 
-              !previousOrders.some((existingOrder) => existingOrder.id === order.id)
+              !recentOrders.some((existingOrder) => existingOrder.id === order.id)
             );
 
             if (newOrder) {
-              console.log('🔔 NEW ORDER DETECTED!', newOrder.orderNumber);
-              
               // Increment new order count
               setNewOrderCount((prev) => prev + 1);
 
               // Play sound
-              console.log('🔊 Playing sound...');
               playNotificationSound();
 
-              // Show browser notification
-              console.log('🔔 Showing browser notification, permission:', notificationPermission);
-              if (notificationPermission === 'granted' && 'Notification' in window) {
-                const notification = new Notification('🔔 New Order Received!', {
-                  body: `Order ${newOrder.orderNumber} from ${newOrder.customerName || 'Walk-in Customer'}\nTotal: ${formatNaira(newOrder.total)}`,
-                  icon: '/logo.png',
-                  tag: newOrder.orderNumber,
-                  requireInteraction: false,
-                });
-
-                notification.onclick = () => {
-                  window.focus();
-                  notification.close();
-                };
-
-                setTimeout(() => notification.close(), 10000);
-              } else {
-                console.warn('⚠️ Notifications not granted or not supported');
-              }
+              // Show notification
+              showNotification(newOrder.orderNumber, newOrder.customerName, newOrder.total);
 
               // Flash animation
-              console.log('✨ Adding flash animation');
               document.body.classList.add('flash-notification');
               setTimeout(() => {
                 document.body.classList.remove('flash-notification');
@@ -180,18 +169,15 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
             }
           }
 
+          previousOrderCountRef.current = currentOrderCount;
           setRecentOrders(newOrders);
         }
       } catch (error) {
-        console.error('❌ Failed to refresh dashboard data:', error);
+        console.error('Failed to refresh dashboard data:', error);
       }
     }, 15000); // Check every 15 seconds
 
-    return () => {
-      console.log('🛑 Auto-refresh effect unmounted');
-      clearInterval(interval);
-    };
-  }, [branchId, notificationPermission]); // Removed recentOrders from dependencies
+    return () => clearInterval(interval);
   }, [branchId, recentOrders]);
 
   // Clear new order badge
