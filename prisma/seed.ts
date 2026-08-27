@@ -165,12 +165,83 @@ async function main() {
         sortOrder: 5,
       },
     }),
+    prisma.menuCategory.upsert({
+      where: { branchId_slug: { branchId: mainBranch.id, slug: 'drinks' } },
+      update: {},
+      create: {
+        branchId: mainBranch.id,
+        name: 'Drinks',
+        slug: 'drinks',
+        description: 'Beers, wines, and beverages',
+        active: true,
+        sortOrder: 6,
+      },
+    }),
+    prisma.menuCategory.upsert({
+      where: { branchId_slug: { branchId: mainBranch.id, slug: 'grills' } },
+      update: {},
+      create: {
+        branchId: mainBranch.id,
+        name: 'Grills',
+        slug: 'grills',
+        description: 'Grilled meats and BBQ specialties',
+        active: true,
+        sortOrder: 7,
+      },
+    }),
+    prisma.menuCategory.upsert({
+      where: { branchId_slug: { branchId: mainBranch.id, slug: 'cocktails' } },
+      update: {},
+      create: {
+        branchId: mainBranch.id,
+        name: 'Cocktails',
+        slug: 'cocktails',
+        description: 'Signature alcoholic cocktails',
+        active: true,
+        sortOrder: 8,
+      },
+    }),
+    prisma.menuCategory.upsert({
+      where: { branchId_slug: { branchId: mainBranch.id, slug: 'mocktails' } },
+      update: {},
+      create: {
+        branchId: mainBranch.id,
+        name: 'Mocktails',
+        slug: 'mocktails',
+        description: 'Non-alcoholic refreshing drinks',
+        active: true,
+        sortOrder: 9,
+      },
+    }),
+    prisma.menuCategory.upsert({
+      where: { branchId_slug: { branchId: mainBranch.id, slug: 'teas' } },
+      update: {},
+      create: {
+        branchId: mainBranch.id,
+        name: 'Teas',
+        slug: 'teas',
+        description: 'Hot and cold tea selections',
+        active: true,
+        sortOrder: 10,
+      },
+    }),
   ]);
   
   console.log(`✓ Created ${categories.length} categories`);
 
   // Get category references
-  const [soupsCategory, riceCategory, quickMealsCategory, pepperSoupCategory, proteinsCategory] = categories;
+  const [
+    soupsCategory,
+    riceCategory,
+    quickMealsCategory,
+    pepperSoupCategory,
+    proteinsCategory,
+    drinksCategory,
+    grillsCategory,
+    cocktailsCategory,
+    mocktailsCategory,
+    teasCategory,
+  ] = categories;
 
   // ============================================
   // 6. CREATE MENU ITEMS - SOUPS
@@ -634,6 +705,408 @@ async function main() {
 
   console.log('✓ Created protein items');
 
+  // ============================================
+  // 11. CREATE MENU ITEMS - DRINKS (BEERS & WINES)
+  // ============================================
+  console.log('Creating drinks menu items...');
+
+  // BEERS
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        categoryId: drinksCategory.id,
+        name: 'Star Lager',
+        slug: 'star-lager',
+        description: 'Premium Nigerian lager beer',
+        basePrice: toKobo(2500),
+        active: true,
+        available: true,
+        sortOrder: 1,
+      },
+      {
+        categoryId: drinksCategory.id,
+        name: 'Heineken',
+        slug: 'heineken',
+        description: 'International premium lager',
+        basePrice: toKobo(2500),
+        active: true,
+        available: true,
+        sortOrder: 2,
+      },
+      {
+        categoryId: drinksCategory.id,
+        name: 'Gulder',
+        slug: 'gulder',
+        description: 'Ultimate lager beer',
+        basePrice: toKobo(2500),
+        active: true,
+        available: true,
+        sortOrder: 3,
+      },
+      {
+        categoryId: drinksCategory.id,
+        name: 'Trophy',
+        slug: 'trophy',
+        description: 'Extra special stout',
+        basePrice: toKobo(2000),
+        active: true,
+        available: true,
+        sortOrder: 4,
+      },
+      {
+        categoryId: drinksCategory.id,
+        name: 'Life Continental',
+        slug: 'life-continental',
+        description: 'Light and refreshing lager',
+        basePrice: toKobo(2000),
+        active: true,
+        available: true,
+        sortOrder: 5,
+      },
+      {
+        categoryId: drinksCategory.id,
+        name: 'Four Cousins',
+        slug: 'four-cousins',
+        description: 'Fruity sweet wine',
+        basePrice: toKobo(3500),
+        active: true,
+        available: true,
+        sortOrder: 6,
+      },
+      {
+        categoryId: drinksCategory.id,
+        name: 'Baron Romero',
+        slug: 'baron-romero',
+        description: 'Spanish red wine',
+        basePrice: toKobo(4000),
+        active: true,
+        available: true,
+        sortOrder: 7,
+      },
+      {
+        categoryId: drinksCategory.id,
+        name: 'Eva Wine',
+        slug: 'eva-wine',
+        description: 'Sweet sparkling wine',
+        basePrice: toKobo(2500),
+        active: true,
+        available: true,
+        sortOrder: 8,
+      },
+    ],
+  });
+
+  // CARLO ROSSI WINES (with variants)
+  const carloRossiRed = await prisma.menuItem.create({
+    data: {
+      categoryId: drinksCategory.id,
+      name: 'Carlo Rossi Red',
+      slug: 'carlo-rossi-red',
+      description: 'Sweet red wine',
+      active: true,
+      available: true,
+      sortOrder: 9,
+      variants: {
+        create: [
+          { name: 'Small (Glass)', price: toKobo(1500), sortOrder: 1, available: true },
+          { name: 'Large (Bottle)', price: toKobo(4000), sortOrder: 2, available: true },
+        ],
+      },
+    },
+  });
+
+  const carloRossiWhite = await prisma.menuItem.create({
+    data: {
+      categoryId: drinksCategory.id,
+      name: 'Carlo Rossi White',
+      slug: 'carlo-rossi-white',
+      description: 'Crisp white wine',
+      active: true,
+      available: true,
+      sortOrder: 10,
+      variants: {
+        create: [
+          { name: 'Small (Glass)', price: toKobo(1500), sortOrder: 1, available: true },
+          { name: 'Large (Bottle)', price: toKobo(4000), sortOrder: 2, available: true },
+        ],
+      },
+    },
+  });
+
+  console.log('✓ Created drinks items');
+
+  // ============================================
+  // 12. CREATE MENU ITEMS - GRILLS
+  // ============================================
+  console.log('Creating grill menu items...');
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        categoryId: grillsCategory.id,
+        name: 'Grilled Whole Chicken',
+        slug: 'grilled-whole-chicken',
+        description: 'Perfectly grilled whole chicken',
+        basePrice: toKobo(8000),
+        active: true,
+        available: true,
+        featured: true,
+        sortOrder: 1,
+      },
+      {
+        categoryId: grillsCategory.id,
+        name: 'BBQ Ribs',
+        slug: 'bbq-ribs',
+        description: 'Tender BBQ pork ribs',
+        basePrice: toKobo(6500),
+        active: true,
+        available: true,
+        sortOrder: 2,
+      },
+      {
+        categoryId: grillsCategory.id,
+        name: 'Grilled Fish',
+        slug: 'grilled-fish',
+        description: 'Fresh grilled tilapia or catfish',
+        basePrice: toKobo(5000),
+        active: true,
+        available: true,
+        sortOrder: 3,
+      },
+      {
+        categoryId: grillsCategory.id,
+        name: 'Suya Platter',
+        slug: 'suya-platter',
+        description: 'Spicy grilled beef suya',
+        basePrice: toKobo(4000),
+        active: true,
+        available: true,
+        sortOrder: 4,
+      },
+      {
+        categoryId: grillsCategory.id,
+        name: 'Mixed Grill Platter',
+        slug: 'mixed-grill-platter',
+        description: 'Chicken, beef, and sausage',
+        basePrice: toKobo(12000),
+        active: true,
+        available: true,
+        featured: true,
+        sortOrder: 5,
+      },
+      {
+        categoryId: grillsCategory.id,
+        name: 'Grilled Prawns',
+        slug: 'grilled-prawns',
+        description: 'Jumbo prawns with garlic butter',
+        basePrice: toKobo(7500),
+        active: true,
+        available: true,
+        sortOrder: 6,
+      },
+      {
+        categoryId: grillsCategory.id,
+        name: 'Asun (Spicy Goat Meat)',
+        slug: 'asun',
+        description: 'Spicy grilled goat meat',
+        basePrice: toKobo(5500),
+        active: true,
+        available: true,
+        sortOrder: 7,
+      },
+    ],
+  });
+
+  console.log('✓ Created grill items');
+
+  // ============================================
+  // 13. CREATE MENU ITEMS - COCKTAILS
+  // ============================================
+  console.log('Creating cocktail menu items...');
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        categoryId: cocktailsCategory.id,
+        name: 'Chapman',
+        slug: 'chapman-cocktail',
+        description: 'Classic Nigerian cocktail mix',
+        basePrice: toKobo(2500),
+        active: true,
+        available: true,
+        featured: true,
+        sortOrder: 1,
+      },
+      {
+        categoryId: cocktailsCategory.id,
+        name: 'Pina Colada',
+        slug: 'pina-colada',
+        description: 'Rum, coconut cream, and pineapple',
+        basePrice: toKobo(3500),
+        active: true,
+        available: true,
+        sortOrder: 2,
+      },
+      {
+        categoryId: cocktailsCategory.id,
+        name: 'Mojito',
+        slug: 'mojito',
+        description: 'Rum, mint, lime, and soda',
+        basePrice: toKobo(3000),
+        active: true,
+        available: true,
+        sortOrder: 3,
+      },
+      {
+        categoryId: cocktailsCategory.id,
+        name: 'Sex on the Beach',
+        slug: 'sex-on-the-beach',
+        description: 'Vodka, peach schnapps, and fruit juices',
+        basePrice: toKobo(3500),
+        active: true,
+        available: true,
+        sortOrder: 4,
+      },
+      {
+        categoryId: cocktailsCategory.id,
+        name: 'Mai Tai',
+        slug: 'mai-tai',
+        description: 'Rum and tropical fruit blend',
+        basePrice: toKobo(3500),
+        active: true,
+        available: true,
+        sortOrder: 5,
+      },
+      {
+        categoryId: cocktailsCategory.id,
+        name: 'Margarita',
+        slug: 'margarita',
+        description: 'Tequila, lime, and triple sec',
+        basePrice: toKobo(3500),
+        active: true,
+        available: true,
+        sortOrder: 6,
+      },
+    ],
+  });
+
+  console.log('✓ Created cocktail items');
+
+  // ============================================
+  // 14. CREATE MENU ITEMS - MOCKTAILS
+  // ============================================
+  console.log('Creating mocktail menu items...');
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        categoryId: mocktailsCategory.id,
+        name: 'Virgin Mojito',
+        slug: 'virgin-mojito',
+        description: 'Refreshing mint and lime mocktail',
+        basePrice: toKobo(2000),
+        active: true,
+        available: true,
+        featured: true,
+        sortOrder: 1,
+      },
+      {
+        categoryId: mocktailsCategory.id,
+        name: 'Fruit Punch',
+        slug: 'fruit-punch',
+        description: 'Mixed tropical fruit blend',
+        basePrice: toKobo(1800),
+        active: true,
+        available: true,
+        sortOrder: 2,
+      },
+      {
+        categoryId: mocktailsCategory.id,
+        name: 'Fresh Squeeze',
+        slug: 'fresh-squeeze',
+        description: 'Fresh orange or pineapple juice',
+        basePrice: toKobo(2500),
+        active: true,
+        available: true,
+        sortOrder: 3,
+      },
+      {
+        categoryId: mocktailsCategory.id,
+        name: 'Berry Blast',
+        slug: 'berry-blast',
+        description: 'Mixed berries smoothie',
+        basePrice: toKobo(2200),
+        active: true,
+        available: true,
+        sortOrder: 4,
+      },
+      {
+        categoryId: mocktailsCategory.id,
+        name: 'Tropical Paradise',
+        slug: 'tropical-paradise',
+        description: 'Mango, passion fruit, and coconut',
+        basePrice: toKobo(2500),
+        active: true,
+        available: true,
+        sortOrder: 5,
+      },
+    ],
+  });
+
+  console.log('✓ Created mocktail items');
+
+  // ============================================
+  // 15. CREATE MENU ITEMS - TEAS
+  // ============================================
+  console.log('Creating tea menu items...');
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        categoryId: teasCategory.id,
+        name: 'Lipton Hot Tea',
+        slug: 'lipton-hot-tea',
+        description: 'Classic hot tea',
+        basePrice: toKobo(500),
+        active: true,
+        available: true,
+        sortOrder: 1,
+      },
+      {
+        categoryId: teasCategory.id,
+        name: 'Green Tea',
+        slug: 'green-tea',
+        description: 'Antioxidant-rich green tea',
+        basePrice: toKobo(800),
+        active: true,
+        available: true,
+        sortOrder: 2,
+      },
+      {
+        categoryId: teasCategory.id,
+        name: 'Herbal Tea',
+        slug: 'herbal-tea',
+        description: 'Soothing herbal infusion',
+        basePrice: toKobo(1000),
+        active: true,
+        available: true,
+        sortOrder: 3,
+      },
+      {
+        categoryId: teasCategory.id,
+        name: 'Iced Tea',
+        slug: 'iced-tea',
+        description: 'Refreshing cold brewed tea',
+        basePrice: toKobo(1200),
+        active: true,
+        available: true,
+        sortOrder: 4,
+      },
+    ],
+  });
+
+  console.log('✓ Created tea items');
+
   console.log('\n✅ Database seed completed successfully!\n');
   console.log('Default admin credentials:');
   console.log('Email: admin@greatdelight.com');
@@ -641,7 +1114,17 @@ async function main() {
   console.log('\nRestaurant: GREAT DELIGHT');
   console.log('Branch: Main Branch');
   console.log(`Tables: ${tableCount} tables created (TABLE 01 - TABLE ${String(tableCount).padStart(2, '0')})`);
-}
+  console.log('\nMenu Categories:');
+  console.log('- Soups');
+  console.log('- Rice & Combos');
+  console.log('- Quick Meals');
+  console.log('- Pepper Soup');
+  console.log('- Proteins');
+  console.log('- Drinks (Beers & Wines)');
+  console.log('- Grills');
+  console.log('- Cocktails');
+  console.log('- Mocktails');
+  console.log('- Teas');}
 
 main()
   .catch((e) => {
