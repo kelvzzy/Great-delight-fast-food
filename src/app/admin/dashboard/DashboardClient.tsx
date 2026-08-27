@@ -46,6 +46,12 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
   const [newOrderCount, setNewOrderCount] = useState(0);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const recentOrdersRef = useRef(initialOrders); // Use ref to avoid dependency issues
+
+  // Update ref when orders change
+  useEffect(() => {
+    recentOrdersRef.current = recentOrders;
+  }, [recentOrders]);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -117,12 +123,14 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
         if (ordersRes.ok) {
           const ordersData = await ordersRes.json();
           const newOrders = ordersData.orders || [];
-          console.log('📋 Current orders:', newOrders.length, 'Previous orders:', recentOrders.length);
+          const previousOrders = recentOrdersRef.current; // Use ref
+          
+          console.log('📋 Current orders:', newOrders.length, 'Previous orders:', previousOrders.length);
           
           // Detect new orders by comparing with previous orders
           const hasNewOrders = newOrders.some((order: Order) => 
             order.status === 'NEW' && 
-            !recentOrders.some((existingOrder) => existingOrder.id === order.id)
+            !previousOrders.some((existingOrder) => existingOrder.id === order.id)
           );
 
           console.log('🔍 Has new orders?', hasNewOrders);
@@ -130,7 +138,7 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
           if (hasNewOrders) {
             const newOrder = newOrders.find((order: Order) => 
               order.status === 'NEW' && 
-              !recentOrders.some((existingOrder) => existingOrder.id === order.id)
+              !previousOrders.some((existingOrder) => existingOrder.id === order.id)
             );
 
             if (newOrder) {
@@ -183,7 +191,7 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
       console.log('🛑 Auto-refresh effect unmounted');
       clearInterval(interval);
     };
-  }, [branchId, recentOrders, notificationPermission]);
+  }, [branchId, notificationPermission]); // Removed recentOrders from dependencies
   }, [branchId, recentOrders]);
 
   // Clear new order badge
