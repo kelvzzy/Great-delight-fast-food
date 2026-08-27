@@ -850,7 +850,6 @@ async function main() {
         basePrice: toKobo(8000),
         active: true,
         available: true,
-        featured: true,
         sortOrder: 1,
       },
       {
@@ -891,7 +890,6 @@ async function main() {
         basePrice: toKobo(12000),
         active: true,
         available: true,
-        featured: true,
         sortOrder: 5,
       },
       {
@@ -934,7 +932,6 @@ async function main() {
         basePrice: toKobo(2500),
         active: true,
         available: true,
-        featured: true,
         sortOrder: 1,
       },
       {
@@ -1007,7 +1004,6 @@ async function main() {
         basePrice: toKobo(2000),
         active: true,
         available: true,
-        featured: true,
         sortOrder: 1,
       },
       {
