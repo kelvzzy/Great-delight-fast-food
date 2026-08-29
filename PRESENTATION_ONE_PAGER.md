@@ -21,18 +21,20 @@ No app download. No waiting for waiter. No order errors.
 - No app installation needed
 
 ### For Staff 👨‍🍳
-- Real-time order notifications
-- Update order status (NEW → PREPARING → READY)
+- Real-time order notifications (30-second auto-refresh)
+- Update order status (NEW → ACCEPTED → PREPARING → READY → COMPLETED)
 - View daily statistics
-- Manage menu items
+- Edit menu item prices
+- Toggle item availability (active/inactive)
 - Track revenue
 
 ### For Management 📊
 - Live sales dashboard
 - Today's revenue at a glance
-- Popular items tracking
-- Order history
-- Customer data collection
+- Order count tracking (total, pending, completed)
+- Order history with auto-refresh
+- Customer data collection (name & phone)
+- Average order value analytics
 
 ---
 
@@ -116,9 +118,12 @@ https://great-delight-fastfood.vercel.app/menu/great-delight/main/table-01
 **Management Training:** 1 hour  
 **What you'll learn:**
 - View daily statistics
-- Update menu items
-- Change prices
-- Manage tables
+- Edit menu item prices (inline editing)
+- Toggle item availability (active/inactive)
+- Manage tables and QR codes
+- View customer data
+
+**Note:** Adding new menu items requires developer access (included in Premium/Full Management support plans)
 
 ---
 
@@ -140,11 +145,12 @@ https://great-delight-fastfood.vercel.app/menu/great-delight/main/table-01
 - Bug fixes
 - Security updates
 
-**Premium Support** (+₦15,000/month)
+### Premium Support (+₦15,000/month)
 - Phone support
 - Same-day response
 - Priority fixes
 - Monthly reports
+- Menu item additions/changes handled for you
 
 **Full Management** (+₦40,000/month)
 - Menu updates handled for you
@@ -163,7 +169,7 @@ A: System works on mobile data. Multiple network backup options.
 A: Staff can still take orders manually and enter them.
 
 **Q: Can we update menu ourselves?**  
-A: Yes! Simple admin panel. We also offer managed updates.
+A: Yes! You can edit prices and toggle item availability through the admin panel. Adding new items requires developer access (can be included in support plan).
 
 **Q: What if we grow to multiple branches?**  
 A: System supports unlimited branches. Easy to scale.

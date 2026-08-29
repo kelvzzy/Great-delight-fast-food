@@ -255,9 +255,9 @@ Let me show you how it works..."
    - Track order flow
    
 3. **Menu Management**
-   - Add/edit items
-   - Update prices
-   - Mark items as unavailable
+   - Edit item prices (inline editing)
+   - Toggle item availability (active/inactive)
+   - View items by category
 
 ### Key Benefits to Emphasize
 ```
@@ -434,6 +434,7 @@ would only be $20-40/month - less than one meal!"
 - Priority bug fixes
 - Feature requests
 - Monthly reports
+- Menu item additions/changes handled for you
 
 ### Full Management (+₦30,000-50,000/month)
 - All premium features
