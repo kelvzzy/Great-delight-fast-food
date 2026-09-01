@@ -9,14 +9,10 @@ import {
   CheckCircle,
   ArrowRight,
   Bell,
-  BellRing,
-  Volume2,
-  VolumeX
+  BellRing
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useToast } from '@/components/ToastContainer';
 
 interface Stats {
   totalOrders: number;
@@ -48,13 +44,80 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
   const [stats, setStats] = useState(initialStats);
   const [recentOrders, setRecentOrders] = useState(initialOrders);
   const [newOrderCount, setNewOrderCount] = useState(0);
-  const previousOrderIdsRef = useRef(new Set(initialOrders.map(o => o.id)));
-  
-  // Notification system
-  const { settings, updateSettings, requestPermission, notify } = useNotifications();
-  const { showToast } = useToast();
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previousOrderCountRef = useRef(initialOrders.length);
 
-  // Refresh data every 15 seconds and check for new orders
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+      
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then((permission) => {
+          setNotificationPermission(permission);
+        });
+      }
+    }
+
+    // Initialize audio element for notification sound (using Web Audio API)
+    // Create a simple notification beep
+    const createBeep = () => {
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+      } catch (error) {
+        console.error('Failed to create notification beep:', error);
+      }
+    };
+
+    // Store the beep function
+    audioRef.current = { play: createBeep } as any;
+  }, []);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    if (audioRef.current) {
+      audioRef.current.play().catch((error) => {
+        console.error('Failed to play notification sound:', error);
+      });
+    }
+  };
+
+  // Show browser notification
+  const showNotification = (orderNumber: string, customerName: string | null, total: number) => {
+    if (notificationPermission === 'granted' && 'Notification' in window) {
+      const notification = new Notification('🔔 New Order Received!', {
+        body: `Order ${orderNumber} from ${customerName || 'Walk-in Customer'}\nTotal: ${formatNaira(total)}`,
+        icon: '/logo.png',
+        tag: orderNumber,
+        requireInteraction: false,
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+
+      // Auto-close after 10 seconds
+      setTimeout(() => notification.close(), 10000);
+    }
+  };
+
+  // Refresh data every 15 seconds
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -72,38 +135,41 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
           const ordersData = await ordersRes.json();
           const newOrders = ordersData.orders || [];
           
-          // Check for new orders
-          const currentOrderIds = new Set(newOrders.map((o: Order) => o.id));
-          const previousOrderIds = previousOrderIdsRef.current;
-          
-          // Find truly new orders
-          const newOrdersList = newOrders.filter((order: Order) => 
-            !previousOrderIds.has(order.id) && order.status === 'NEW'
+          // Check if there are new orders
+          const currentOrderCount = newOrders.length;
+          const previousOrderCount = previousOrderCountRef.current;
+
+          // Detect new orders by comparing counts and checking for NEW status
+          const hasNewOrders = newOrders.some((order: Order) => 
+            order.status === 'NEW' && 
+            !recentOrders.some((existingOrder) => existingOrder.id === order.id)
           );
 
-          if (newOrdersList.length > 0) {
-            // Process each new order
-            newOrdersList.forEach((order: Order) => {
-              // Increment badge count
+          if (hasNewOrders) {
+            const newOrder = newOrders.find((order: Order) => 
+              order.status === 'NEW' && 
+              !recentOrders.some((existingOrder) => existingOrder.id === order.id)
+            );
+
+            if (newOrder) {
+              // Increment new order count
               setNewOrderCount((prev) => prev + 1);
 
-              // Show notification (sound + browser + toast)
-              notify(
-                '🔔 New Order!',
-                `Order ${order.orderNumber} from ${order.customerName || 'Walk-in'} - ${formatNaira(order.total)}`
-              );
+              // Play sound
+              playNotificationSound();
 
-              // Show toast notification
-              showToast(
-                'notification',
-                '🎉 New Order Received!',
-                `${order.orderNumber} - ${formatNaira(order.total)}`
-              );
-            });
+              // Show notification
+              showNotification(newOrder.orderNumber, newOrder.customerName, newOrder.total);
+
+              // Flash animation
+              document.body.classList.add('flash-notification');
+              setTimeout(() => {
+                document.body.classList.remove('flash-notification');
+              }, 1000);
+            }
           }
 
-          // Update refs
-          previousOrderIdsRef.current = currentOrderIds;
+          previousOrderCountRef.current = currentOrderCount;
           setRecentOrders(newOrders);
         }
       } catch (error) {
@@ -112,7 +178,7 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
     }, 15000); // Check every 15 seconds
 
     return () => clearInterval(interval);
-  }, [branchId, notify, showToast]);
+  }, [branchId, recentOrders]);
 
   // Clear new order badge
   const clearNotificationBadge = () => {
@@ -175,56 +241,29 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
 
   return (
     <div className="p-4 md:p-8">
-      {/* Header with Notification Controls */}
-      <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+      {/* Header with Notification Badge */}
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-2">
             Overview of today&apos;s performance
           </p>
         </div>
         
-        {/* Notification Controls */}
-        <div className="flex items-center gap-3">
-          {/* Sound Toggle */}
-          <button
-            onClick={() => updateSettings({ soundEnabled: !settings.soundEnabled })}
-            className={`p-3 rounded-xl transition-all ${
-              settings.soundEnabled
-                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-            }`}
-            title={settings.soundEnabled ? 'Sound On' : 'Sound Off'}
-          >
-            {settings.soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-          </button>
-
-          {/* Browser Notification Toggle */}
-          <button
-            onClick={requestPermission}
-            className={`p-3 rounded-xl transition-all ${
-              settings.browserEnabled
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-            }`}
-            title={settings.browserEnabled ? 'Notifications Enabled' : 'Enable Notifications'}
-          >
-            <Bell className="w-5 h-5" />
-          </button>
-
-          {/* New Order Badge */}
+        {/* Notification Bell */}
+        <div className="relative">
           {newOrderCount > 0 ? (
             <button
               onClick={clearNotificationBadge}
-              className="relative p-3 rounded-xl bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-all"
+              className="relative p-3 rounded-full bg-primary-100 hover:bg-primary-200 transition-colors"
             >
-              <BellRing className="w-6 h-6 text-orange-600 dark:text-orange-400 animate-bounce" />
-              <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg">
+              <BellRing className="w-6 h-6 text-primary-600 animate-bounce" />
+              <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
                 {newOrderCount}
               </span>
             </button>
           ) : (
-            <div className="p-3 rounded-xl bg-gray-100 dark:bg-gray-800">
+            <div className="p-3 rounded-full bg-gray-100">
               <Bell className="w-6 h-6 text-gray-400" />
             </div>
           )}
