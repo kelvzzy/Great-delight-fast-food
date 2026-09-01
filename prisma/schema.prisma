@@ -243,17 +243,6 @@ model Order {
   subtotal        Int         // Total in kobo before any adjustments
   total           Int         // Final total in kobo
   itemCount       Int         @default(0) @map("item_count")
-  
-  // Gift Order Fields
-  isGift          Boolean     @default(false) @map("is_gift")
-  giftSenderName  String?     @map("gift_sender_name")
-  giftSenderPhone String?     @map("gift_sender_phone")
-  giftRecipientName String?   @map("gift_recipient_name")
-  giftRecipientPhone String?  @map("gift_recipient_phone")
-  giftMessage     String?     @map("gift_message")
-  giftClaimed     Boolean     @default(false) @map("gift_claimed")
-  giftClaimedAt   DateTime?   @map("gift_claimed_at")
-  
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
   acceptedAt      DateTime?   @map("accepted_at")
@@ -269,8 +258,6 @@ model Order {
   @@index([status])
   @@index([orderNumber])
   @@index([createdAt])
-  @@index([isGift])
-  @@index([giftRecipientPhone])
   @@map("orders")
 }
 
