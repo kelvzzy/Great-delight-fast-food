@@ -1,10 +1,14 @@
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { Sparkles, ShoppingBag, Clock, Shield, QrCode, Utensils } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
+      {/* Theme Toggle */}
+      <ThemeToggle />
+      
       {/* Animated Background Patterns */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>

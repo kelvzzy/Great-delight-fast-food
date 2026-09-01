@@ -315,3 +315,67 @@ button:active {
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
+
+
+/* Dark Mode Support */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  @apply bg-gray-900 text-gray-100;
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  @apply text-gray-100;
+}
+
+/* Dark mode card styles */
+.dark .bg-white {
+  @apply bg-gray-800 text-gray-100;
+}
+
+.dark .bg-gray-50 {
+  @apply bg-gray-900;
+}
+
+.dark .bg-gray-100 {
+  @apply bg-gray-800;
+}
+
+.dark .text-gray-900 {
+  @apply text-gray-100;
+}
+
+.dark .text-gray-800 {
+  @apply text-gray-200;
+}
+
+.dark .text-gray-700 {
+  @apply text-gray-300;
+}
+
+.dark .text-gray-600 {
+  @apply text-gray-400;
+}
+
+.dark .border-gray-200 {
+  @apply border-gray-700;
+}
+
+.dark .border-gray-300 {
+  @apply border-gray-600;
+}
+
+/* Dark mode gradient backgrounds */
+.dark .bg-gradient-to-br.from-orange-50 {
+  @apply from-gray-900;
+}
+
+.dark .bg-gradient-to-br.to-red-50 {
+  @apply to-gray-800;
+}
+
+.dark .bg-gradient-to-br.to-pink-50 {
+  @apply to-gray-800;
+}
