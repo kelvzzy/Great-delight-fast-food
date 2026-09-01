@@ -8,11 +8,10 @@ import {
   Clock,
   CheckCircle,
   ArrowRight,
-  Bell,
-  BellRing
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { OrderNotifications } from '@/components/admin/OrderNotifications';
 
 interface Stats {
   totalOrders: number;
@@ -43,81 +42,8 @@ interface DashboardClientProps {
 export function DashboardClient({ stats: initialStats, recentOrders: initialOrders, branchId }: DashboardClientProps) {
   const [stats, setStats] = useState(initialStats);
   const [recentOrders, setRecentOrders] = useState(initialOrders);
-  const [newOrderCount, setNewOrderCount] = useState(0);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const previousOrderCountRef = useRef(initialOrders.length);
 
-  // Request notification permission on mount
-  useEffect(() => {
-    if ('Notification' in window) {
-      setNotificationPermission(Notification.permission);
-      
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().then((permission) => {
-          setNotificationPermission(permission);
-        });
-      }
-    }
-
-    // Initialize audio element for notification sound (using Web Audio API)
-    // Create a simple notification beep
-    const createBeep = () => {
-      try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        oscillator.frequency.value = 800;
-        oscillator.type = 'sine';
-
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.5);
-      } catch (error) {
-        console.error('Failed to create notification beep:', error);
-      }
-    };
-
-    // Store the beep function
-    audioRef.current = { play: createBeep } as any;
-  }, []);
-
-  // Play notification sound
-  const playNotificationSound = () => {
-    if (audioRef.current) {
-      audioRef.current.play().catch((error) => {
-        console.error('Failed to play notification sound:', error);
-      });
-    }
-  };
-
-  // Show browser notification
-  const showNotification = (orderNumber: string, customerName: string | null, total: number) => {
-    if (notificationPermission === 'granted' && 'Notification' in window) {
-      const notification = new Notification('🔔 New Order Received!', {
-        body: `Order ${orderNumber} from ${customerName || 'Walk-in Customer'}\nTotal: ${formatNaira(total)}`,
-        icon: '/logo.png',
-        tag: orderNumber,
-        requireInteraction: false,
-      });
-
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-      };
-
-      // Auto-close after 10 seconds
-      setTimeout(() => notification.close(), 10000);
-    }
-  };
-
-  // Refresh data every 15 seconds
+  // Refresh data every 20 seconds
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -133,57 +59,15 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
 
         if (ordersRes.ok) {
           const ordersData = await ordersRes.json();
-          const newOrders = ordersData.orders || [];
-          
-          // Check if there are new orders
-          const currentOrderCount = newOrders.length;
-          const previousOrderCount = previousOrderCountRef.current;
-
-          // Detect new orders by comparing counts and checking for NEW status
-          const hasNewOrders = newOrders.some((order: Order) => 
-            order.status === 'NEW' && 
-            !recentOrders.some((existingOrder) => existingOrder.id === order.id)
-          );
-
-          if (hasNewOrders) {
-            const newOrder = newOrders.find((order: Order) => 
-              order.status === 'NEW' && 
-              !recentOrders.some((existingOrder) => existingOrder.id === order.id)
-            );
-
-            if (newOrder) {
-              // Increment new order count
-              setNewOrderCount((prev) => prev + 1);
-
-              // Play sound
-              playNotificationSound();
-
-              // Show notification
-              showNotification(newOrder.orderNumber, newOrder.customerName, newOrder.total);
-
-              // Flash animation
-              document.body.classList.add('flash-notification');
-              setTimeout(() => {
-                document.body.classList.remove('flash-notification');
-              }, 1000);
-            }
-          }
-
-          previousOrderCountRef.current = currentOrderCount;
-          setRecentOrders(newOrders);
+          setRecentOrders(ordersData.orders || []);
         }
       } catch (error) {
         console.error('Failed to refresh dashboard data:', error);
       }
-    }, 15000); // Check every 15 seconds
+    }, 20000); // Check every 20 seconds
 
     return () => clearInterval(interval);
-  }, [branchId, recentOrders]);
-
-  // Clear new order badge
-  const clearNotificationBadge = () => {
-    setNewOrderCount(0);
-  };
+  }, [branchId]);
 
   const statCards = [
     {
@@ -241,7 +125,7 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
 
   return (
     <div className="p-4 md:p-8">
-      {/* Header with Notification Badge */}
+      {/* Header with Notification Controls */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -250,24 +134,8 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
           </p>
         </div>
         
-        {/* Notification Bell */}
-        <div className="relative">
-          {newOrderCount > 0 ? (
-            <button
-              onClick={clearNotificationBadge}
-              className="relative p-3 rounded-full bg-primary-100 hover:bg-primary-200 transition-colors"
-            >
-              <BellRing className="w-6 h-6 text-primary-600 animate-bounce" />
-              <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                {newOrderCount}
-              </span>
-            </button>
-          ) : (
-            <div className="p-3 rounded-full bg-gray-100">
-              <Bell className="w-6 h-6 text-gray-400" />
-            </div>
-          )}
-        </div>
+        {/* Notification Controls */}
+        <OrderNotifications branchId={branchId} />
       </div>
 
       {/* Stats Grid */}
@@ -314,7 +182,7 @@ export function DashboardClient({ stats: initialStats, recentOrders: initialOrde
               <div
                 key={order.id}
                 className={`flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-all ${
-                  order.status === 'NEW' ? 'bg-blue-50 border-blue-300 animate-pulse-slow' : ''
+                  order.status === 'NEW' ? 'bg-blue-50 border-blue-300' : ''
                 }`}
               >
                 <div className="flex-1">
