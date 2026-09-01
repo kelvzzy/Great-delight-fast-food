@@ -1,7 +1,12 @@
+'use client';
+
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { Sparkles, ShoppingBag, Clock, Shield, QrCode, Utensils } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+
+// Disable static generation since we use client-side theme
+export const dynamic = 'force-dynamic';
 
 export default function HomePage() {
   return (

@@ -66,9 +66,14 @@ export default function CartPage({
 
       const data = await response.json();
       
-      // Clear cart and redirect to confirmation
-      useCartStore.getState().clearCart();
-      router.push(`/order/${data.order.id}/confirmation`);
+      // Redirect to success page BEFORE clearing cart
+      // This prevents the "Your cart is empty" flash
+      router.push(`/menu/${params.restaurant}/${params.branch}/${params.table}/success?orderNumber=${data.orderNumber}`);
+      
+      // Clear cart after navigation starts
+      setTimeout(() => {
+        useCartStore.getState().clearCart();
+      }, 100);
     } catch (err: any) {
       setError(err.message || 'Failed to submit order. Please try again.');
       setIsSubmitting(false);

@@ -52,7 +52,12 @@ export async function POST(request: Request) {
     // Create order
     const order = await orderService.createOrder(validatedData);
 
-    return NextResponse.json(order, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      order,
+    }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
