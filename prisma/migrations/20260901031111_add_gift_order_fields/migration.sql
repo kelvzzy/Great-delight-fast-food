@@ -1,0 +1,3 @@
+-- AlreadyApplied
+-- This migration was already applied to the database
+-- Gift order fields already exist in the orders table

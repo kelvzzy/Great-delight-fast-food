@@ -6,6 +6,9 @@ import { ArrowLeft, Trash2, Minus, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { GiftCheckbox } from '@/components/gift/GiftCheckbox';
+import { GiftDetailsModal, type GiftDetails } from '@/components/gift/GiftDetailsModal';
+import { WhatsAppShareButton } from '@/components/gift/WhatsAppShareButton';
 
 export default function CartPage({
   params,
@@ -20,14 +23,75 @@ export default function CartPage({
   const [specialNote, setSpecialNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  
+  // Gift order state
+  const [isGiftOrder, setIsGiftOrder] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  const [giftDetails, setGiftDetails] = useState<GiftDetails | null>(null);
+  const [giftOrderResult, setGiftOrderResult] = useState<{
+    orderNumber: string;
+    whatsappLink: string;
+    recipientName: string;
+  } | null>(null);
 
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
 
+  // Show gift success screen if gift order completed
+  if (giftOrderResult) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-pink-900/20 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-center">
+          <div className="text-6xl mb-4 animate-bounce">🎁</div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Gift Order Created!
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            Order #{giftOrderResult.orderNumber}
+          </p>
+          <div className="mb-6">
+            <WhatsAppShareButton
+              whatsappLink={giftOrderResult.whatsappLink}
+              recipientName={giftOrderResult.recipientName}
+            />
+          </div>
+          <Link
+            href={`/menu/${params.restaurant}/${params.branch}/${params.table}`}
+            className="text-purple-600 dark:text-purple-400 hover:underline font-semibold"
+          >
+            Back to Menu
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const handleGiftCheckboxChange = (checked: boolean) => {
+    setIsGiftOrder(checked);
+    if (checked) {
+      setShowGiftModal(true);
+    } else {
+      setGiftDetails(null);
+    }
+  };
+
+  const handleGiftDetailsSubmit = (details: GiftDetails) => {
+    setGiftDetails(details);
+    setShowGiftModal(false);
+  };
+
   const handleSubmitOrder = async () => {
-    if (!customerName.trim()) {
-      setError('Please enter your name');
-      return;
+    // Validate based on order type
+    if (isGiftOrder) {
+      if (!giftDetails) {
+        setError('Please provide gift details');
+        return;
+      }
+    } else {
+      if (!customerName.trim()) {
+        setError('Please enter your name');
+        return;
+      }
     }
 
     if (!tableId || !branchId) {
@@ -46,34 +110,71 @@ export default function CartPage({
         optionValueIds: item.options.map((opt) => opt.valueId),
       }));
 
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          branchId,
-          tableId,
-          customerName: customerName.trim(),
-          customerPhone: customerPhone.trim() || undefined,
-          specialNote: specialNote.trim() || undefined,
-          items: orderItems,
-        }),
-      });
+      if (isGiftOrder && giftDetails) {
+        // Submit as gift order
+        const response = await fetch('/api/orders/gift', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            branchId,
+            tableId,
+            giftSenderName: giftDetails.senderName,
+            giftSenderPhone: giftDetails.senderPhone,
+            giftRecipientName: giftDetails.recipientName,
+            giftRecipientPhone: giftDetails.recipientPhone,
+            giftMessage: giftDetails.message || undefined,
+            items: orderItems,
+          }),
+        });
 
-      if (!response.ok) {
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to submit gift order');
+        }
+
         const data = await response.json();
-        throw new Error(data.error || 'Failed to submit order');
-      }
+        
+        // Show WhatsApp share button
+        setGiftOrderResult({
+          orderNumber: data.order.orderNumber,
+          whatsappLink: data.whatsappLink,
+          recipientName: giftDetails.recipientName,
+        });
+        
+        // Clear cart
+        setTimeout(() => {
+          useCartStore.getState().clearCart();
+        }, 100);
+      } else {
+        // Submit regular order
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            branchId,
+            tableId,
+            customerName: customerName.trim(),
+            customerPhone: customerPhone.trim() || undefined,
+            specialNote: specialNote.trim() || undefined,
+            items: orderItems,
+          }),
+        });
 
-      const data = await response.json();
-      
-      // Redirect to success page BEFORE clearing cart
-      // This prevents the "Your cart is empty" flash
-      router.push(`/menu/${params.restaurant}/${params.branch}/${params.table}/success?orderNumber=${data.orderNumber}`);
-      
-      // Clear cart after navigation starts
-      setTimeout(() => {
-        useCartStore.getState().clearCart();
-      }, 100);
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to submit order');
+        }
+
+        const data = await response.json();
+        
+        // Redirect to success page BEFORE clearing cart
+        router.push(`/menu/${params.restaurant}/${params.branch}/${params.table}/success?orderNumber=${data.orderNumber}`);
+        
+        // Clear cart after navigation starts
+        setTimeout(() => {
+          useCartStore.getState().clearCart();
+        }, 100);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to submit order. Please try again.');
       setIsSubmitting(false);
@@ -173,54 +274,101 @@ export default function CartPage({
           ))}
         </div>
 
-        {/* Customer Information */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Information</h2>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-2">
-                Name <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                id="customerName"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Enter your name"
-                required
-              />
-            </div>
+        {/* Gift Order Option */}
+        <GiftCheckbox
+          checked={isGiftOrder}
+          onChange={handleGiftCheckboxChange}
+        />
+        
+        {/* Gift Details Modal */}
+        <GiftDetailsModal
+          isOpen={showGiftModal}
+          onClose={() => setShowGiftModal(false)}
+          onSubmit={handleGiftDetailsSubmit}
+        />
 
-            <div>
-              <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number (Optional)
-              </label>
-              <input
-                type="tel"
-                id="customerPhone"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="080XXXXXXXX"
-              />
-            </div>
+        {/* Customer Information - Only show if NOT a gift order */}
+        {!isGiftOrder && (
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Information</h2>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Name <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="customerName"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Enter your name"
+                  required
+                />
+              </div>
 
-            <div>
-              <label htmlFor="specialNote" className="block text-sm font-medium text-gray-700 mb-2">
-                Special Instructions (Optional)
-              </label>
-              <textarea
-                id="specialNote"
-                value={specialNote}
-                onChange={(e) => setSpecialNote(e.target.value)}
-                rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                placeholder="Any special requests or allergies?"
-              />
+              <div>
+                <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number (Optional)
+                </label>
+                <input
+                  type="tel"
+                  id="customerPhone"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="080XXXXXXXX"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="specialNote" className="block text-sm font-medium text-gray-700 mb-2">
+                  Special Instructions (Optional)
+                </label>
+                <textarea
+                  id="specialNote"
+                  value={specialNote}
+                  onChange={(e) => setSpecialNote(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                  placeholder="Any special requests or allergies?"
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Gift Order Summary - Show if gift order */}
+        {isGiftOrder && giftDetails && (
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-4 shadow-sm border-2 border-purple-300 dark:border-purple-600">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+              <span>🎁</span> Gift Order Summary
+            </h2>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-300">From:</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{giftDetails.senderName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-300">To:</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{giftDetails.recipientName}</span>
+              </div>
+              {giftDetails.message && (
+                <div className="pt-2 border-t border-purple-200 dark:border-purple-700">
+                  <span className="text-gray-600 dark:text-gray-300">Message:</span>
+                  <p className="text-gray-900 dark:text-gray-100 italic mt-1">&quot;{giftDetails.message}&quot;</p>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowGiftModal(true)}
+                className="mt-3 text-purple-600 dark:text-purple-400 hover:underline text-sm font-semibold"
+              >
+                Edit Gift Details
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -243,10 +391,13 @@ export default function CartPage({
           </div>
           <button
             onClick={handleSubmitOrder}
-            disabled={isSubmitting || !customerName.trim()}
+            disabled={isSubmitting || (isGiftOrder ? !giftDetails : !customerName.trim())}
             className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-lg transition-colors"
           >
-            {isSubmitting ? 'Placing Order...' : `Place Order · ${formatNaira(totalPrice)}`}
+            {isSubmitting 
+              ? (isGiftOrder ? 'Creating Gift Order...' : 'Placing Order...') 
+              : (isGiftOrder ? `Send Gift · ${formatNaira(totalPrice)}` : `Place Order · ${formatNaira(totalPrice)}`)
+            }
           </button>
         </div>
       </div>

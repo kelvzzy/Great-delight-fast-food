@@ -2,7 +2,7 @@
 
 import { formatNaira } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import { RefreshCw, Filter, ChevronRight } from 'lucide-react';
+import { RefreshCw, Filter, ChevronRight, Gift } from 'lucide-react';
 
 interface Order {
   id: string;
@@ -12,6 +12,11 @@ interface Order {
   customerName: string | null;
   createdAt: string;
   itemCount: number;
+  isGift: boolean;
+  giftSenderName: string | null;
+  giftRecipientName: string | null;
+  giftClaimed: boolean;
+  giftClaimCode: string | null;
   table: {
     name: string;
   };
@@ -49,6 +54,7 @@ const nextStatus: Record<string, string> = {
 export function OrdersClient({ initialOrders, branchId }: OrdersClientProps) {
   const [orders, setOrders] = useState(initialOrders);
   const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [showOnlyGifts, setShowOnlyGifts] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
@@ -92,9 +98,9 @@ export function OrdersClient({ initialOrders, branchId }: OrdersClientProps) {
     }
   };
 
-  const filteredOrders = selectedStatus === 'ALL'
-    ? orders
-    : orders.filter((order) => order.status === selectedStatus);
+  const filteredOrders = orders
+    .filter((order) => selectedStatus === 'ALL' || order.status === selectedStatus)
+    .filter((order) => !showOnlyGifts || order.isGift);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -143,22 +149,43 @@ export function OrdersClient({ initialOrders, branchId }: OrdersClientProps) {
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
         <div className="flex items-center gap-2 mb-3">
           <Filter className="w-4 h-4 text-gray-600" />
-          <span className="font-medium text-gray-900">Filter by Status</span>
+          <span className="font-medium text-gray-900">Filters</span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {statusOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setSelectedStatus(option.value)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedStatus === option.value
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
+        
+        {/* Status Filter */}
+        <div className="mb-4">
+          <div className="text-sm text-gray-600 mb-2">Status</div>
+          <div className="flex flex-wrap gap-2">
+            {statusOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setSelectedStatus(option.value)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedStatus === option.value
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Gift Order Filter */}
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showOnlyGifts}
+              onChange={(e) => setShowOnlyGifts(e.target.checked)}
+              className="w-5 h-5 rounded border-purple-400 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <Gift className="w-4 h-4 text-purple-600" />
+              Show Gift Orders Only
+            </span>
+          </label>
         </div>
       </div>
 
@@ -182,12 +209,30 @@ export function OrdersClient({ initialOrders, branchId }: OrdersClientProps) {
                       <h3 className="text-xl font-bold text-gray-900">
                         {order.orderNumber}
                       </h3>
+                      {order.isGift && (
+                        <span className="text-sm font-medium px-3 py-1 rounded-full border bg-purple-100 text-purple-800 border-purple-200 flex items-center gap-1">
+                          <Gift className="w-3 h-3" />
+                          Gift
+                        </span>
+                      )}
                       <span className={`text-sm font-medium px-3 py-1 rounded-full border ${getStatusColor(order.status)}`}>
                         {getStatusLabel(order.status)}
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                      <span className="font-medium">{order.customerName || 'Walk-in Customer'}</span>
+                      {order.isGift ? (
+                        <>
+                          <span className="font-medium">
+                            🎁 From: {order.giftSenderName} → To: {order.giftRecipientName}
+                          </span>
+                          <span>•</span>
+                          <span className={`font-semibold ${order.giftClaimed ? 'text-green-600' : 'text-purple-600'}`}>
+                            {order.giftClaimed ? '✓ Claimed' : '⏳ Unclaimed'}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-medium">{order.customerName || 'Walk-in Customer'}</span>
+                      )}
                       <span>•</span>
                       <span>{order.table.name}</span>
                       <span>•</span>
@@ -221,6 +266,14 @@ export function OrdersClient({ initialOrders, branchId }: OrdersClientProps) {
 
                 {expandedOrder === order.id && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
+                    {/* Gift Claim Code */}
+                    {order.isGift && order.giftClaimCode && !order.giftClaimed && (
+                      <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div className="text-xs text-purple-600 font-semibold mb-1">CLAIM CODE</div>
+                        <div className="text-lg font-mono font-bold text-purple-900">{order.giftClaimCode}</div>
+                      </div>
+                    )}
+                    
                     <div className="space-y-2">
                       {order.items.map((item) => (
                         <div key={item.id} className="flex justify-between text-sm">
@@ -237,6 +290,31 @@ export function OrdersClient({ initialOrders, branchId }: OrdersClientProps) {
                 {/* Action Buttons */}
                 {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
                   <div className="mt-4 pt-4 border-t border-gray-200 flex gap-3">
+                    {/* Claim button for unclaimed gift orders */}
+                    {order.isGift && !order.giftClaimed && order.giftClaimCode && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(`/api/orders/gift/${order.giftClaimCode}/claim`, {
+                              method: 'PATCH',
+                            });
+                            if (res.ok) {
+                              await refreshOrders();
+                            } else {
+                              alert('Failed to claim gift order');
+                            }
+                          } catch (error) {
+                            console.error('Failed to claim gift:', error);
+                            alert('Failed to claim gift order');
+                          }
+                        }}
+                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Gift className="w-4 h-4" />
+                        Mark as Claimed
+                      </button>
+                    )}
+                    
                     {nextStatus[order.status] && (
                       <button
                         onClick={() => handleStatusUpdate(order.id, nextStatus[order.status])}
