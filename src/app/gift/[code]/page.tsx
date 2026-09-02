@@ -1,6 +1,10 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 
+// Force dynamic rendering - this page depends on dynamic parameters
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface GiftOrderData {
   orderNumber: string;
   senderName: string;
