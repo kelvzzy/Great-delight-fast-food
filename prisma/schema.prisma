@@ -7,271 +7,290 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model audit_logs {
-  id          String   @id
-  user_id     String?
-  action      String
-  entity_type String
-  entity_id   String
-  details     String?
-  ip_address  String?
-  created_at  DateTime @default(now())
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String      @map("password_hash")
+  firstName    String      @map("first_name")
+  lastName     String      @map("last_name")
+  role         Role        @default(STAFF)
+  active       Boolean     @default(true)
+  restaurantId String?     @map("restaurant_id")
+  branchId     String?     @map("branch_id")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  lastLoginAt  DateTime?   @map("last_login_at")
+  branch       Branch?     @relation(fields: [branchId], references: [id])
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id])
 
-  @@index([created_at])
-  @@index([entity_type, entity_id])
-  @@index([user_id])
+  @@index([restaurantId])
+  @@index([branchId])
+  @@index([email])
+  @@map("users")
 }
 
-model branches {
-  id              String            @id
-  restaurant_id   String
-  name            String
-  slug            String
-  address         String?
-  phone           String?
-  active          Boolean           @default(true)
-  created_at      DateTime          @default(now())
-  updated_at      DateTime
-  restaurants     restaurants       @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
-  menu_categories menu_categories[]
-  orders          orders[]
-  tables          tables[]
-  users           users[]
+model Restaurant {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  logo        String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  branches    Branch[]
+  users       User[]
 
-  @@unique([restaurant_id, slug])
-  @@index([restaurant_id])
   @@index([slug])
+  @@map("restaurants")
 }
 
-model menu_categories {
-  id          String       @id
-  branch_id   String
+model Branch {
+  id             String         @id @default(uuid())
+  restaurantId   String         @map("restaurant_id")
+  name           String
+  slug           String
+  address        String?
+  phone          String?
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  restaurant     Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuCategories MenuCategory[]
+  orders         Order[]
+  tables         Table[]
+  users          User[]
+
+  @@unique([restaurantId, slug])
+  @@index([restaurantId])
+  @@index([slug])
+  @@map("branches")
+}
+
+model Table {
+  id        String   @id @default(uuid())
+  branchId  String   @map("branch_id")
+  name      String
+  slug      String
+  qrCode    String?  @map("qr_code")
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  orders    Order[]
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, slug])
+  @@index([branchId])
+  @@index([slug])
+  @@map("tables")
+}
+
+model MenuCategory {
+  id          String     @id @default(uuid())
+  branchId    String     @map("branch_id")
   name        String
   slug        String
   description String?
   image       String?
-  active      Boolean      @default(true)
-  sort_order  Int          @default(0)
-  created_at  DateTime     @default(now())
-  updated_at  DateTime
-  branches    branches     @relation(fields: [branch_id], references: [id], onDelete: Cascade)
-  menu_items  menu_items[]
-
-  @@unique([branch_id, slug])
-  @@index([branch_id])
-  @@index([slug])
-}
-
-model menu_items {
-  id              String          @id
-  category_id     String
-  name            String
-  slug            String
-  description     String?
-  image           String?
-  base_price      Int?
-  active          Boolean         @default(true)
-  available       Boolean         @default(true)
-  sort_order      Int             @default(0)
-  created_at      DateTime        @default(now())
-  updated_at      DateTime
-  menu_categories menu_categories @relation(fields: [category_id], references: [id], onDelete: Cascade)
-  menu_options    menu_options[]
-  menu_variants   menu_variants[]
-  order_items     order_items[]
-
-  @@unique([category_id, slug])
-  @@index([available])
-  @@index([category_id])
-  @@index([slug])
-}
-
-model menu_option_values {
-  id                 String               @id
-  option_id          String
-  name               String
-  price_modifier     Int                  @default(0)
-  active             Boolean              @default(true)
-  available          Boolean              @default(true)
-  sort_order         Int                  @default(0)
-  created_at         DateTime             @default(now())
-  updated_at         DateTime
-  menu_options       menu_options         @relation(fields: [option_id], references: [id], onDelete: Cascade)
-  order_item_options order_item_options[]
-
-  @@index([option_id])
-}
-
-model menu_options {
-  id                 String               @id
-  menu_item_id       String
-  name               String
-  required           Boolean              @default(false)
-  sort_order         Int                  @default(0)
-  created_at         DateTime             @default(now())
-  updated_at         DateTime
-  menu_option_values menu_option_values[]
-  menu_items         menu_items           @relation(fields: [menu_item_id], references: [id], onDelete: Cascade)
-
-  @@index([menu_item_id])
-}
-
-model menu_variants {
-  id                  String                @id
-  menu_item_id        String
-  name                String
-  price               Int
-  active              Boolean               @default(true)
-  available           Boolean               @default(true)
-  sort_order          Int                   @default(0)
-  created_at          DateTime              @default(now())
-  updated_at          DateTime
-  menu_items          menu_items            @relation(fields: [menu_item_id], references: [id], onDelete: Cascade)
-  order_item_variants order_item_variants[]
-
-  @@index([menu_item_id])
-}
-
-model order_item_options {
-  id                 String             @id
-  order_item_id      String
-  option_value_id    String
-  option_name        String
-  value_name         String
-  price_modifier     Int                @default(0)
-  menu_option_values menu_option_values @relation(fields: [option_value_id], references: [id])
-  order_items        order_items        @relation(fields: [order_item_id], references: [id], onDelete: Cascade)
-
-  @@index([option_value_id])
-  @@index([order_item_id])
-}
-
-model order_item_variants {
-  id            String        @id
-  order_item_id String        @unique
-  variant_id    String
-  variant_name  String
-  variant_price Int
-  order_items   order_items   @relation(fields: [order_item_id], references: [id], onDelete: Cascade)
-  menu_variants menu_variants @relation(fields: [variant_id], references: [id])
-
-  @@index([order_item_id])
-  @@index([variant_id])
-}
-
-model order_items {
-  id                  String               @id
-  order_id            String
-  menu_item_id        String
-  item_name           String
-  item_price          Int?
-  quantity            Int                  @default(1)
-  subtotal            Int
-  created_at          DateTime             @default(now())
-  order_item_options  order_item_options[]
-  order_item_variants order_item_variants?
-  menu_items          menu_items           @relation(fields: [menu_item_id], references: [id])
-  orders              orders               @relation(fields: [order_id], references: [id], onDelete: Cascade)
-
-  @@index([menu_item_id])
-  @@index([order_id])
-}
-
-model orders {
-  id                   String        @id
-  order_number         String        @unique
-  branch_id            String
-  table_id             String
-  status               OrderStatus   @default(NEW)
-  customer_name        String?
-  customer_phone       String?
-  special_note         String?
-  subtotal             Int
-  total                Int
-  item_count           Int           @default(0)
-  is_gift              Boolean       @default(false)
-  gift_sender_name     String?
-  gift_sender_phone    String?
-  gift_recipient_name  String?
-  gift_recipient_phone String?
-  gift_message         String?
-  gift_claim_code      String?       @unique
-  gift_claimed         Boolean       @default(false)
-  gift_claimed_at      DateTime?
-  created_at           DateTime      @default(now())
-  updated_at           DateTime
-  accepted_at          DateTime?
-  preparing_at         DateTime?
-  ready_at             DateTime?
-  completed_at         DateTime?
-  cancelled_at         DateTime?
-  order_items          order_items[]
-  branches             branches      @relation(fields: [branch_id], references: [id], onDelete: Cascade)
-  tables               tables        @relation(fields: [table_id], references: [id])
-
-  @@index([branch_id])
-  @@index([created_at])
-  @@index([gift_claim_code])
-  @@index([gift_recipient_phone])
-  @@index([is_gift, gift_claimed])
-  @@index([is_gift])
-  @@index([order_number])
-  @@index([status])
-  @@index([table_id])
-}
-
-model restaurants {
-  id          String     @id
-  name        String
-  slug        String     @unique
-  description String?
-  logo        String?
   active      Boolean    @default(true)
-  created_at  DateTime   @default(now())
-  updated_at  DateTime
-  branches    branches[]
-  users       users[]
+  sortOrder   Int        @default(0) @map("sort_order")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  branch      Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  menuItems   MenuItem[]
 
+  @@unique([branchId, slug])
+  @@index([branchId])
   @@index([slug])
+  @@map("menu_categories")
 }
 
-model tables {
-  id         String   @id
-  branch_id  String
+model MenuItem {
+  id          String        @id @default(uuid())
+  categoryId  String        @map("category_id")
+  name        String
+  slug        String
+  description String?
+  image       String?
+  basePrice   Int?          @map("base_price")
+  active      Boolean       @default(true)
+  available   Boolean       @default(true)
+  sortOrder   Int           @default(0) @map("sort_order")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  category    MenuCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  options     MenuOption[]
+  variants    MenuVariant[]
+  orderItems  OrderItem[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@index([slug])
+  @@index([available])
+  @@map("menu_items")
+}
+
+model MenuVariant {
+  id                String             @id @default(uuid())
+  menuItemId        String             @map("menu_item_id")
+  name              String
+  price             Int
+  active            Boolean            @default(true)
+  available         Boolean            @default(true)
+  sortOrder         Int                @default(0) @map("sort_order")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  menuItem          MenuItem           @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  orderItemVariants OrderItemVariant[]
+
+  @@index([menuItemId])
+  @@map("menu_variants")
+}
+
+model MenuOption {
+  id         String            @id @default(uuid())
+  menuItemId String            @map("menu_item_id")
   name       String
-  slug       String
-  qr_code    String?
-  active     Boolean  @default(true)
-  sort_order Int      @default(0)
-  created_at DateTime @default(now())
-  updated_at DateTime
-  orders     orders[]
-  branches   branches @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+  required   Boolean           @default(false)
+  sortOrder  Int               @default(0) @map("sort_order")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+  values     MenuOptionValue[]
+  menuItem   MenuItem          @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
 
-  @@unique([branch_id, slug])
-  @@index([branch_id])
-  @@index([slug])
+  @@index([menuItemId])
+  @@map("menu_options")
 }
 
-model users {
-  id            String       @id
-  email         String       @unique
-  password_hash String
-  first_name    String
-  last_name     String
-  role          Role         @default(STAFF)
-  active        Boolean      @default(true)
-  restaurant_id String?
-  branch_id     String?
-  created_at    DateTime     @default(now())
-  updated_at    DateTime
-  last_login_at DateTime?
-  branches      branches?    @relation(fields: [branch_id], references: [id])
-  restaurants   restaurants? @relation(fields: [restaurant_id], references: [id])
+model MenuOptionValue {
+  id               String            @id @default(uuid())
+  optionId         String            @map("option_id")
+  name             String
+  priceModifier    Int               @default(0) @map("price_modifier")
+  active           Boolean           @default(true)
+  available        Boolean           @default(true)
+  sortOrder        Int               @default(0) @map("sort_order")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  option           MenuOption        @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  orderItemOptions OrderItemOption[]
 
-  @@index([branch_id])
-  @@index([email])
-  @@index([restaurant_id])
+  @@index([optionId])
+  @@map("menu_option_values")
+}
+
+model Order {
+  id                 String      @id @default(uuid())
+  orderNumber        String      @unique @map("order_number")
+  branchId           String      @map("branch_id")
+  tableId            String      @map("table_id")
+  status             OrderStatus @default(NEW)
+  customerName       String?     @map("customer_name")
+  customerPhone      String?     @map("customer_phone")
+  specialNote        String?     @map("special_note")
+  subtotal           Int
+  total              Int
+  itemCount          Int         @default(0) @map("item_count")
+  isGift             Boolean     @default(false) @map("is_gift")
+  giftSenderName     String?     @map("gift_sender_name")
+  giftSenderPhone    String?     @map("gift_sender_phone")
+  giftRecipientName  String?     @map("gift_recipient_name")
+  giftRecipientPhone String?     @map("gift_recipient_phone")
+  giftMessage        String?     @map("gift_message") @db.Text
+  giftClaimCode      String?     @unique @map("gift_claim_code")
+  giftClaimed        Boolean     @default(false) @map("gift_claimed")
+  giftClaimedAt      DateTime?   @map("gift_claimed_at")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+  acceptedAt         DateTime?   @map("accepted_at")
+  preparingAt        DateTime?   @map("preparing_at")
+  readyAt            DateTime?   @map("ready_at")
+  completedAt        DateTime?   @map("completed_at")
+  cancelledAt        DateTime?   @map("cancelled_at")
+  items              OrderItem[]
+  branch             Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  table              Table       @relation(fields: [tableId], references: [id])
+
+  @@index([branchId])
+  @@index([tableId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@index([giftClaimCode])
+  @@index([isGift, giftClaimed])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String            @id @default(uuid())
+  orderId    String            @map("order_id")
+  menuItemId String            @map("menu_item_id")
+  itemName   String            @map("item_name")
+  itemPrice  Int?              @map("item_price")
+  quantity   Int               @default(1)
+  subtotal   Int
+  createdAt  DateTime          @default(now()) @map("created_at")
+  options    OrderItemOption[]
+  variant    OrderItemVariant?
+  menuItem   MenuItem          @relation(fields: [menuItemId], references: [id])
+  order      Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_items")
+}
+
+model OrderItemVariant {
+  id           String      @id @default(uuid())
+  orderItemId  String      @unique @map("order_item_id")
+  variantId    String      @map("variant_id")
+  variantName  String      @map("variant_name")
+  variantPrice Int         @map("variant_price")
+  orderItem    OrderItem   @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  variant      MenuVariant @relation(fields: [variantId], references: [id])
+
+  @@index([orderItemId])
+  @@index([variantId])
+  @@map("order_item_variants")
+}
+
+model OrderItemOption {
+  id            String          @id @default(uuid())
+  orderItemId   String          @map("order_item_id")
+  optionValueId String          @map("option_value_id")
+  optionName    String          @map("option_name")
+  valueName     String          @map("value_name")
+  priceModifier Int             @default(0) @map("price_modifier")
+  optionValue   MenuOptionValue @relation(fields: [optionValueId], references: [id])
+  orderItem     OrderItem       @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@index([orderItemId])
+  @@index([optionValueId])
+  @@map("order_item_options")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  details    String?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum Role {
+  SUPER_ADMIN
+  RESTAURANT_ADMIN
+  MANAGER
+  STAFF
 }
 
 enum OrderStatus {
@@ -281,11 +300,4 @@ enum OrderStatus {
   READY
   COMPLETED
   CANCELLED
-}
-
-enum Role {
-  SUPER_ADMIN
-  RESTAURANT_ADMIN
-  MANAGER
-  STAFF
 }
